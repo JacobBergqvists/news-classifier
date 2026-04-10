@@ -64,7 +64,7 @@ def classify_with_claude(url: str, article_text: str) -> dict:
     user_message = f"URL: {url}\n\nArticle content:\n{article_text}"
 
     message = client.messages.create(
-        model="claude-opus-4-6",
+        model="claude-sonnet-4-6",
         max_tokens=512,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_message}],
