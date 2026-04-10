@@ -87,6 +87,13 @@ def classify_with_claude(url: str, article_text: str) -> dict:
 class ClassifyRequest(BaseModel):
     url: str
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "url": "https://www.cnbc.com/2026/04/10/alibaba-cloud-invests-world-model-ai-shengshu-vidu.html"
+            }
+        }
+
 
 @app.get("/health")
 def health():
