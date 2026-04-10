@@ -4,3 +4,4 @@ anthropic==0.43.0
 httpx==0.28.1
 beautifulsoup4==4.12.3
 python-dotenv==1.0.1
+pytest==8.3.4

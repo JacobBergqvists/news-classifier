@@ -1,0 +1,119 @@
+"""Tests for the news classifier API.
+
+Run with: python -m pytest test_main.py -v
+"""
+
+from unittest.mock import MagicMock, patch
+
+import pytest
+from fastapi.testclient import TestClient
+
+from main import app, classify_with_claude, fetch_article_text, latest_results
+
+client = TestClient(app)
+
+
+# --- Health & UI ---
+
+
+def test_health():
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_homepage_returns_html():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "News Classifier" in response.text
+    assert "text/html" in response.headers["content-type"]
+
+
+# --- Input validation ---
+
+
+def test_classify_rejects_missing_url():
+    response = client.post("/classify", json={})
+    assert response.status_code == 422
+
+
+def test_classify_rejects_invalid_url():
+    response = client.post("/classify", json={"url": "not-a-url"})
+    assert response.status_code == 422
+
+
+def test_classify_rejects_empty_url():
+    response = client.post("/classify", json={"url": ""})
+    assert response.status_code == 422
+
+
+# --- Classification with mocked dependencies ---
+
+
+@patch("main.classify_with_claude")
+@patch("main.fetch_article_text")
+def test_classify_good_news(mock_fetch, mock_classify):
+    mock_fetch.return_value = "Vanguard launches AI tool for wealth management portfolios."
+    mock_classify.return_value = {
+        "label": "GOOD_NEWS",
+        "confidence": 0.85,
+        "reasoning": "AI adoption in wealth management validates Performativ's market.",
+        "relevance_topics": ["AI in wealth management", "portfolio management"],
+    }
+
+    response = client.post("/classify", json={"url": "https://example.com/article"})
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["label"] == "GOOD_NEWS"
+    assert data["confidence"] == 0.85
+    assert "url" in data
+    assert "processed_at" in data
+    assert len(data["relevance_topics"]) > 0
+
+
+@patch("main.classify_with_claude")
+@patch("main.fetch_article_text")
+def test_classify_unrelated(mock_fetch, mock_classify):
+    mock_fetch.return_value = "Taylor Swift announces new world tour dates for 2026."
+    mock_classify.return_value = {
+        "label": "UNRELATED",
+        "confidence": 0.95,
+        "reasoning": "Entertainment news with no connection to wealth management or fintech.",
+        "relevance_topics": [],
+    }
+
+    response = client.post("/classify", json={"url": "https://example.com/entertainment"})
+    assert response.status_code == 200
+    assert response.json()["label"] == "UNRELATED"
+
+
+@patch("main.classify_with_claude")
+@patch("main.fetch_article_text")
+def test_latest_returns_recent_results(mock_fetch, mock_classify):
+    latest_results.clear()
+    mock_fetch.return_value = "Some article text."
+    mock_classify.return_value = {
+        "label": "BAD_NEWS",
+        "confidence": 0.7,
+        "reasoning": "Negative regulation impact.",
+        "relevance_topics": ["regulation"],
+    }
+
+    # Classify two articles
+    client.post("/classify", json={"url": "https://example.com/a"})
+    client.post("/classify", json={"url": "https://example.com/b"})
+
+    response = client.get("/latest?limit=5")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    # Most recent first
+    assert data[0]["url"] == "https://example.com/b"
+
+
+def test_latest_empty():
+    latest_results.clear()
+    response = client.get("/latest")
+    assert response.status_code == 200
+    assert response.json() == []
