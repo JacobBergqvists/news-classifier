@@ -3,113 +3,329 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Performativ — News Classifier</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>News Classifier &mdash; Performativ</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'Inter',sans-serif;background:#f8f9fc;color:#1a2233;min-height:100vh;}
+  ::selection{background:#4361ee;color:#fff;}
 
-  nav{background:#fff;border-bottom:1px solid #e8ecf2;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;}
-  .nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:#1a2233;letter-spacing:-0.3px;}
-  .nav-logo svg{width:28px;height:28px;}
-  .nav-badge{background:#eef2ff;color:#4361ee;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:0.3px;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:#0c0c0c;
+    color:#fff;
+    min-height:100vh;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
 
-  .hero{background:linear-gradient(135deg,#1a2233 0%,#2d3a52 100%);padding:64px 32px;text-align:center;position:relative;overflow:hidden;}
-  .hero::before{content:'';position:absolute;inset:0;pointer-events:none;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234361ee' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");}
-  .hero-tag{display:inline-block;background:rgba(67,97,238,0.2);color:#a5b4fc;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;letter-spacing:0.5px;margin-bottom:20px;border:1px solid rgba(67,97,238,0.3);}
-  .hero h1{font-size:40px;font-weight:700;color:#fff;letter-spacing:-1px;margin-bottom:12px;line-height:1.15;}
-  .hero h1 span{color:#7c9eff;}
-  .hero p{color:#8fa3c8;font-size:16px;max-width:480px;margin:0 auto 36px;line-height:1.6;}
+  /* Nav */
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    padding:24px 40px;
+    display:flex;align-items:center;justify-content:space-between;
+    mix-blend-mode:difference;
+  }
+  .logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.5px;}
+  .nav-right{display:flex;gap:32px;align-items:center;}
+  .nav-link{color:#fff;font-size:13px;font-weight:400;text-decoration:none;opacity:0.5;transition:opacity 0.3s;}
+  .nav-link:hover{opacity:1;}
 
-  .input-card{background:#fff;border-radius:16px;padding:6px 6px 6px 20px;display:flex;gap:8px;align-items:center;max-width:640px;margin:0 auto;box-shadow:0 4px 24px rgba(0,0,0,0.15);}
-  input[type="url"]{flex:1;border:none;outline:none;font-size:15px;color:#1a2233;font-family:'Inter',sans-serif;background:transparent;}
-  input[type="url"]::placeholder{color:#9ba8bc;}
-  .btn{padding:12px 24px;border-radius:10px;border:none;background:#4361ee;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;font-family:'Inter',sans-serif;letter-spacing:0.2px;}
-  .btn:hover{background:#3451d1;transform:translateY(-1px);}
-  .btn:disabled{background:#c5cde8;cursor:not-allowed;transform:none;}
+  /* Hero */
+  .hero{
+    min-height:100vh;
+    display:flex;flex-direction:column;
+    justify-content:center;align-items:center;
+    padding:120px 40px 80px;
+    text-align:center;
+    position:relative;
+  }
+  .hero-label{
+    font-size:11px;font-weight:500;letter-spacing:3px;text-transform:uppercase;
+    color:rgba(255,255,255,0.3);
+    margin-bottom:32px;
+  }
+  .hero h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(48px,8vw,96px);
+    font-weight:700;
+    letter-spacing:-3px;
+    line-height:0.95;
+    margin-bottom:40px;
+    max-width:900px;
+  }
+  .hero h1 em{
+    font-style:italic;
+    color:rgba(255,255,255,0.35);
+  }
+  .hero-desc{
+    font-size:16px;
+    color:rgba(255,255,255,0.4);
+    max-width:440px;
+    line-height:1.7;
+    margin-bottom:60px;
+  }
 
-  .main{max-width:720px;margin:0 auto;padding:40px 24px;}
+  /* Scroll indicator */
+  .scroll-hint{
+    position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    color:rgba(255,255,255,0.2);font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  }
+  .scroll-line{width:1px;height:48px;background:rgba(255,255,255,0.1);position:relative;overflow:hidden;}
+  .scroll-line::after{content:'';position:absolute;top:-100%;left:0;width:1px;height:100%;background:#fff;animation:scrollDown 2s ease-in-out infinite;}
+  @keyframes scrollDown{0%{top:-100%;}100%{top:100%;}}
 
-  .loading{display:none;background:#fff;border-radius:16px;padding:40px;text-align:center;border:1px solid #e8ecf2;box-shadow:0 2px 12px rgba(0,0,0,0.05);}
-  .pulse{display:inline-flex;gap:6px;margin-bottom:16px;}
-  .pulse span{width:10px;height:10px;border-radius:50%;background:#4361ee;animation:pulse 1.2s ease-in-out infinite;}
-  .pulse span:nth-child(2){animation-delay:0.2s;}
-  .pulse span:nth-child(3){animation-delay:0.4s;}
-  @keyframes pulse{0%,80%,100%{transform:scale(0.6);opacity:0.4;}40%{transform:scale(1);opacity:1;}}
-  .loading p{color:#8fa3c8;font-size:14px;}
+  /* Classify section */
+  .classify-section{
+    padding:0 40px 120px;
+    max-width:720px;
+    margin:0 auto;
+  }
+  .section-num{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;font-weight:500;color:rgba(255,255,255,0.15);
+    letter-spacing:2px;margin-bottom:24px;
+  }
+  .section-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:32px;font-weight:700;letter-spacing:-1px;
+    margin-bottom:40px;
+  }
 
-  .result{display:none;background:#fff;border-radius:16px;border:1px solid #e8ecf2;box-shadow:0 2px 12px rgba(0,0,0,0.05);overflow:hidden;animation:fadeUp 0.35s ease;}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
-  .result-header{padding:24px 28px;border-bottom:1px solid #f0f3f9;display:flex;align-items:center;justify-content:space-between;}
-  .label-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:20px;font-weight:600;font-size:13px;letter-spacing:0.2px;}
-  .label-badge::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;}
-  .GOOD_NEWS{background:#ecfdf5;color:#059669;}
-  .BAD_NEWS{background:#fef2f2;color:#dc2626;}
-  .UNRELATED{background:#f1f5f9;color:#64748b;}
-  .confidence-pill{background:#f1f5f9;color:#64748b;font-size:13px;font-weight:500;padding:5px 12px;border-radius:20px;}
-  .result-body{padding:24px 28px;}
-  .reasoning{font-size:15px;line-height:1.7;color:#374151;margin-bottom:20px;}
-  .topics-label{font-size:11px;font-weight:600;color:#9ba8bc;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:10px;}
-  .topics{display:flex;flex-wrap:wrap;gap:8px;}
-  .topic-tag{background:#eef2ff;color:#4361ee;padding:5px 13px;border-radius:8px;font-size:13px;font-weight:500;}
-  .result-footer{padding:14px 28px;background:#fafbfd;border-top:1px solid #f0f3f9;font-size:12px;color:#9ba8bc;}
+  /* Input */
+  .input-row{
+    display:flex;gap:12px;align-items:stretch;
+    margin-bottom:12px;
+  }
+  .input-field{
+    flex:1;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:12px;
+    padding:18px 20px;
+    font-size:15px;color:#fff;
+    font-family:'Inter',sans-serif;
+    outline:none;
+    transition:all 0.3s;
+  }
+  .input-field:focus{
+    border-color:rgba(255,255,255,0.2);
+    background:rgba(255,255,255,0.06);
+  }
+  .input-field::placeholder{color:rgba(255,255,255,0.2);}
+  .btn{
+    padding:18px 32px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,0.15);
+    background:transparent;
+    color:#fff;
+    font-size:14px;font-weight:500;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    transition:all 0.3s;
+    white-space:nowrap;
+    letter-spacing:0.3px;
+  }
+  .btn:hover{background:#fff;color:#0c0c0c;}
+  .btn:disabled{opacity:0.2;cursor:not-allowed;background:transparent;color:#fff;}
+  .input-hint{font-size:12px;color:rgba(255,255,255,0.15);margin-bottom:60px;}
 
-  .error{display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px 20px;color:#dc2626;font-size:14px;}
+  /* Loading */
+  .loading{
+    display:none;
+    padding:80px 0;
+    text-align:center;
+  }
+  .loading-bar{
+    width:120px;height:2px;
+    background:rgba(255,255,255,0.06);
+    margin:0 auto 24px;
+    border-radius:1px;overflow:hidden;
+  }
+  .loading-bar::after{
+    content:'';display:block;
+    width:40%;height:100%;
+    background:#fff;
+    animation:loadSlide 1.2s ease-in-out infinite;
+  }
+  @keyframes loadSlide{0%{transform:translateX(-100%);}100%{transform:translateX(350%);}}
+  .loading p{font-size:13px;color:rgba(255,255,255,0.3);}
 
-  .history{margin-top:36px;}
-  .history-header{font-size:12px;font-weight:600;color:#9ba8bc;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:12px;}
-  .history-item{background:#fff;border:1px solid #e8ecf2;border-radius:12px;padding:14px 18px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:14px;}
-  .history-item:hover{border-color:#c7d2fe;box-shadow:0 2px 8px rgba(67,97,238,0.08);transform:translateY(-1px);}
-  .hi-url{font-size:13px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
-  .hi-conf{font-size:12px;color:#9ba8bc;white-space:nowrap;}
+  /* Error */
+  .error{
+    display:none;
+    padding:20px 24px;
+    border:1px solid rgba(255,70,70,0.2);
+    border-radius:12px;
+    color:rgba(255,120,120,0.8);
+    font-size:14px;
+    margin-bottom:40px;
+  }
+
+  /* Result */
+  .result{
+    display:none;
+    animation:fadeIn 0.6s ease;
+  }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+  .result-label-row{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:32px;
+    padding-bottom:24px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .result-label{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:36px;font-weight:700;letter-spacing:-1px;
+  }
+  .result-label.GOOD_NEWS{color:#4ade80;}
+  .result-label.BAD_NEWS{color:#f87171;}
+  .result-label.UNRELATED{color:rgba(255,255,255,0.3);}
+  .result-conf{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:48px;font-weight:700;letter-spacing:-2px;
+    color:rgba(255,255,255,0.1);
+  }
+
+  .result-reasoning{
+    font-size:17px;line-height:1.8;
+    color:rgba(255,255,255,0.6);
+    margin-bottom:40px;
+    max-width:560px;
+  }
+
+  .result-topics{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:40px;}
+  .topic{
+    padding:8px 16px;
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:100px;
+    font-size:13px;color:rgba(255,255,255,0.4);
+    transition:all 0.2s;
+  }
+  .topic:hover{border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.7);}
+
+  .result-meta{
+    font-size:12px;color:rgba(255,255,255,0.12);
+    padding-top:24px;
+    border-top:1px solid rgba(255,255,255,0.04);
+  }
+
+  /* Divider */
+  .divider{
+    width:100%;height:1px;
+    background:rgba(255,255,255,0.04);
+    margin:0 auto 80px;
+    max-width:720px;
+  }
+
+  /* History */
+  .history{
+    max-width:720px;margin:0 auto;
+    padding:0 40px 80px;
+  }
+  .history-header{
+    font-size:11px;font-weight:500;letter-spacing:3px;text-transform:uppercase;
+    color:rgba(255,255,255,0.15);
+    margin-bottom:24px;
+  }
+  .history-item{
+    display:flex;align-items:center;gap:20px;
+    padding:20px 0;
+    border-bottom:1px solid rgba(255,255,255,0.04);
+    cursor:pointer;
+    transition:all 0.2s;
+  }
+  .history-item:hover{padding-left:8px;}
+  .hi-label{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;font-weight:600;letter-spacing:0.5px;
+    width:100px;flex-shrink:0;
+  }
+  .hi-label.GOOD_NEWS{color:#4ade80;}
+  .hi-label.BAD_NEWS{color:#f87171;}
+  .hi-label.UNRELATED{color:rgba(255,255,255,0.2);}
+  .hi-url{flex:1;font-size:13px;color:rgba(255,255,255,0.2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .hi-conf{font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.1);font-weight:600;}
+
+  /* Footer */
+  footer{
+    text-align:center;padding:40px;
+    font-size:12px;color:rgba(255,255,255,0.1);
+  }
+  footer a{color:rgba(255,255,255,0.2);text-decoration:none;}
+  footer a:hover{color:rgba(255,255,255,0.5);}
+
+  /* Responsive */
+  @media(max-width:600px){
+    nav{padding:20px 24px;}
+    .hero{padding:100px 24px 60px;}
+    .classify-section,.history{padding-left:24px;padding-right:24px;}
+    .input-row{flex-direction:column;}
+    .result-label{font-size:28px;}
+    .result-conf{font-size:36px;}
+  }
 </style>
 </head>
 <body>
 
 <nav>
-  <div class="nav-logo">
-    <svg viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="7" fill="#4361ee"/><path d="M7 14h14M7 9h9M7 19h11" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
-    Performativ
+  <div class="logo">Performativ</div>
+  <div class="nav-right">
+    <a href="/docs" class="nav-link">API</a>
+    <a href="/health" class="nav-link">Status</a>
   </div>
-  <span class="nav-badge">News Classifier</span>
 </nav>
 
-<div class="hero">
-  <div class="hero-tag">AI-POWERED INTELLIGENCE</div>
-  <h1>News that <span>matters</span> to<br>your business</h1>
-  <p>Paste any article URL and instantly know if it is relevant to Performativ &mdash; with reasoning and confidence score.</p>
-  <div class="input-card">
-    <input type="url" id="url" placeholder="https://www.ft.com/content/..." />
-    <button class="btn" id="btn">Classify &rarr;</button>
+<section class="hero">
+  <div class="hero-label">News Classification Agent</div>
+  <h1>Relevance,<br><em>classified.</em></h1>
+  <p class="hero-desc">An AI agent that reads news articles and determines their relevance to Performativ &mdash; with structured reasoning.</p>
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    Scroll
   </div>
-</div>
+</section>
 
-<div class="main">
+<div class="divider"></div>
+
+<section class="classify-section">
+  <div class="section-num">01 &mdash; CLASSIFY</div>
+  <h2 class="section-title">Paste an article URL</h2>
+  <div class="input-row">
+    <input type="url" class="input-field" id="url" placeholder="https://..." />
+    <button class="btn" id="btn">Classify</button>
+  </div>
+  <div class="input-hint">Supports most news sites &middot; Press Enter to submit</div>
+
   <div class="loading" id="loading">
-    <div class="pulse"><span></span><span></span><span></span></div>
+    <div class="loading-bar"></div>
     <p>Fetching and analyzing article...</p>
   </div>
 
   <div class="error" id="error"></div>
 
   <div class="result" id="result">
-    <div class="result-header">
-      <span class="label-badge" id="label"></span>
-      <span class="confidence-pill" id="confidence"></span>
+    <div class="result-label-row">
+      <div class="result-label" id="label"></div>
+      <div class="result-conf" id="confidence"></div>
     </div>
-    <div class="result-body">
-      <p class="reasoning" id="reasoning"></p>
-      <div class="topics-label">Relevant topics</div>
-      <div class="topics" id="topics"></div>
-    </div>
-    <div class="result-footer" id="footer"></div>
+    <p class="result-reasoning" id="reasoning"></p>
+    <div class="result-topics" id="topics"></div>
+    <div class="result-meta" id="footer"></div>
   </div>
+</section>
 
-  <div class="history" id="history-section" style="display:none">
-    <div class="history-header">Recent classifications</div>
-    <div id="history"></div>
-  </div>
-</div>
+<div class="divider"></div>
+
+<section class="history" id="history-section" style="display:none">
+  <div class="history-header">Recent Classifications</div>
+  <div id="history"></div>
+</section>
+
+<footer>
+  Built for <a href="https://www.performativ.com" target="_blank">Performativ</a> &middot; Powered by Claude
+</footer>
 
 <script>
 document.getElementById("btn").addEventListener("click", classify);
@@ -118,8 +334,7 @@ document.getElementById("url").addEventListener("keydown", function(e) {
 });
 
 async function classify() {
-  var urlInput = document.getElementById("url");
-  var url = urlInput.value.trim();
+  var url = document.getElementById("url").value.trim();
   if (!url) return;
 
   var btn = document.getElementById("btn");
@@ -147,21 +362,24 @@ async function classify() {
     document.getElementById("error").style.display = "block";
   } finally {
     btn.disabled = false;
-    btn.innerHTML = "Classify &rarr;";
+    btn.textContent = "Classify";
     document.getElementById("loading").style.display = "none";
   }
 }
 
 function showResult(d) {
-  var labelEl = document.getElementById("label");
-  labelEl.textContent = d.label.replace("_", " ");
-  labelEl.className = "label-badge " + d.label;
-  document.getElementById("confidence").textContent = "Confidence " + (d.confidence * 100).toFixed(0) + "%";
+  var label = document.getElementById("label");
+  label.textContent = d.label.replace("_", " ");
+  label.className = "result-label " + d.label;
+
+  document.getElementById("confidence").textContent = Math.round(d.confidence * 100) + "%";
   document.getElementById("reasoning").textContent = d.reasoning;
+
   var topicsHtml = (d.relevance_topics || []).map(function(t) {
-    return "<span class=\"topic-tag\">" + t + "</span>";
+    return "<span class=\"topic\">" + t + "</span>";
   }).join("");
   document.getElementById("topics").innerHTML = topicsHtml;
+
   document.getElementById("footer").textContent = "Processed " + new Date(d.processed_at).toLocaleString();
   document.getElementById("result").style.display = "block";
 }
@@ -177,25 +395,26 @@ async function loadHistory() {
     items.forEach(function(d) {
       var div = document.createElement("div");
       div.className = "history-item";
-      var badge = document.createElement("span");
-      badge.className = "label-badge " + d.label;
-      badge.style.cssText = "font-size:11px;padding:4px 10px;flex-shrink:0";
-      badge.textContent = d.label.replace("_", " ");
+
+      var labelSpan = document.createElement("span");
+      labelSpan.className = "hi-label " + d.label;
+      labelSpan.textContent = d.label.replace("_", " ");
+
       var urlSpan = document.createElement("span");
       urlSpan.className = "hi-url";
       urlSpan.textContent = d.url;
+
       var confSpan = document.createElement("span");
       confSpan.className = "hi-conf";
-      confSpan.textContent = (d.confidence * 100).toFixed(0) + "%";
-      div.appendChild(badge);
+      confSpan.textContent = Math.round(d.confidence * 100) + "%";
+
+      div.appendChild(labelSpan);
       div.appendChild(urlSpan);
       div.appendChild(confSpan);
       div.addEventListener("click", function() { showResult(d); });
       container.appendChild(div);
     });
-  } catch (e) {
-    // silently ignore
-  }
+  } catch (e) {}
 }
 
 loadHistory();
