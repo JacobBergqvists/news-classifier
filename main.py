@@ -55,6 +55,14 @@ legacy modernization, custodian connectivity.
 
 Irrelevant themes: general consumer tech, unrelated macro news, local news, entertainment, sports, lifestyle.
 
+Confidence scoring guidelines (be precise, do NOT default to 0.72 or other round numbers):
+- 0.90-0.99: Article directly mentions Performativ, its competitors, or core product categories by name
+- 0.75-0.89: Article clearly covers a relevant theme (wealth tech, specific regulation, portfolio systems)
+- 0.55-0.74: Article is tangentially related — touches on financial services but not wealth management specifically
+- 0.30-0.54: Weak connection — general fintech or broad industry news
+- 0.10-0.29: Very unlikely to be relevant
+Use the FULL range. Vary your scores — 0.63, 0.78, 0.41, 0.87 are all valid. Never round to the nearest 5 or 10.
+
 Respond ONLY with a JSON object in this exact format (no markdown, no extra text):
 {
   "label": "GOOD_NEWS" | "BAD_NEWS" | "UNRELATED",
