@@ -56,12 +56,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve frontend static files if available
 from fastapi.staticfiles import StaticFiles
-
-frontend_build = Path(__file__).parent / "frontend" / ".next" / "static"
-if frontend_build.exists():
-    app.mount("/static", StaticFiles(directory=str(frontend_build)), name="frontend-static")
 
 claude = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 http_client = httpx.AsyncClient(follow_redirects=True)
@@ -245,9 +240,18 @@ class ClassifyResponse(BaseModel):
 # --- Endpoints ---
 
 
+# Mount Next.js static assets if the build exists
+_frontend_build = Path(__file__).parent / "frontend_build"
+if _frontend_build.exists():
+    app.mount("/_next", StaticFiles(directory=str(_frontend_build / "_next")), name="next-assets")
+
+
 @app.get("/", response_class=HTMLResponse)
 async def homepage():
-    """Serve the web UI."""
+    """Serve the web UI — Next.js build if available, else fallback to vanilla HTML."""
+    next_index = Path(__file__).parent / "frontend_build" / "index.html"
+    if next_index.exists():
+        return next_index.read_text(encoding="utf-8")
     html_path = Path(__file__).parent / "static" / "index.html"
     return html_path.read_text(encoding="utf-8")
 
