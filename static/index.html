@@ -16,77 +16,75 @@ tailwind.config = {
 <style>
   html { scroll-behavior: smooth; }
 
-  /* Animated gradient background */
+  /* Subtle animated gradient */
   .gradient-bg {
-    position: fixed; inset: 0; z-index: 0;
-    background: radial-gradient(ellipse at 20% 50%, rgba(108,138,255,0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(99,102,241,0.06) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 80%, rgba(52,211,153,0.04) 0%, transparent 50%);
-    animation: gradientShift 12s ease-in-out infinite alternate;
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 40%, rgba(108,138,255,0.07) 0%, transparent 100%),
+      radial-gradient(ellipse 50% 40% at 80% 60%, rgba(52,211,153,0.04) 0%, transparent 100%);
+    animation: gradientShift 15s ease-in-out infinite alternate;
   }
   @keyframes gradientShift {
-    0% { background-position: 0% 0%, 100% 0%, 50% 100%; }
-    50% { background-position: 100% 50%, 0% 100%, 80% 20%; }
-    100% { background-position: 50% 100%, 50% 0%, 20% 50%; }
+    0%   { opacity: 0.6; }
+    100% { opacity: 1; }
   }
 
-  /* Noise overlay */
+  /* Noise texture */
   .noise {
-    position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  /* Loader animation */
-  @keyframes slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
-  .loader-bar::after { content:''; display:block; width:40%; height:100%; background:#fff; border-radius:2px; animation:slide 1s ease-in-out infinite; }
+  /* Loader */
+  @keyframes ldSlide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
+  .loader-bar::after { content:''; display:block; width:40%; height:100%; background:#fff; border-radius:2px; animation:ldSlide 1s ease-in-out infinite; }
 
   /* Marquee */
   @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-  .marquee-track { animation: marquee 25s linear infinite; }
+  .marquee-track { animation: marquee 28s linear infinite; }
 
-  /* Scroll line */
-  @keyframes scrollLine { 0%{top:-50%} 100%{top:100%} }
+  /* Scroll indicator */
+  @keyframes scrollLine { 0%{top:-100%} 100%{top:120%} }
 
-  /* Button hover fill */
-  .btn-outline { position:relative; overflow:hidden; }
-  .btn-outline::before {
-    content:''; position:absolute; inset:0;
-    background:#fff; transform:translateY(101%);
-    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
-    z-index:0;
+  /* Button fill on hover */
+  .btn-fill { position:relative; overflow:hidden; }
+  .btn-fill::before {
+    content:''; position:absolute; inset:0; background:#fff;
+    transform:translateY(102%);
+    transition: transform 0.45s cubic-bezier(0.16,1,0.3,1); z-index:0;
   }
-  .btn-outline:hover::before { transform:translateY(0); }
-  .btn-outline:hover { color:#000 !important; }
-  .btn-outline span { position:relative; z-index:1; }
+  .btn-fill:hover::before { transform:translateY(0); }
+  .btn-fill:hover { color:#000 !important; }
+  .btn-fill > * { position:relative; z-index:1; }
 
-  /* 3D card tilt */
-  .tilt-card { transition: transform 0.1s ease-out; transform-style: preserve-3d; }
+  /* Word animation */
+  .word { display:inline-block; overflow:hidden; }
+  .word-inner { display:inline-block; transform:translateY(100%); opacity:0; }
 
-  /* Magnetic button */
-  .magnetic { transition: transform 0.3s cubic-bezier(0.16,1,0.3,1); }
+  /* Reveal */
+  .reveal { opacity:0; transform:translateY(32px); }
+
+  /* Card tilt */
+  .tilt { transform-style:preserve-3d; }
 
   /* Cursor glow */
   .cursor-glow {
-    position: fixed; width: 400px; height: 400px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(108,138,255,0.06) 0%, transparent 70%);
-    pointer-events: none; z-index: 2; transform: translate(-50%, -50%);
-    transition: opacity 0.3s;
+    position:fixed; width:500px; height:500px; border-radius:50%;
+    background:radial-gradient(circle, rgba(108,138,255,0.05) 0%, transparent 65%);
+    pointer-events:none; z-index:2; transform:translate(-50%,-50%);
   }
 
-  /* Split text char */
-  .char { display: inline-block; opacity: 0; transform: translateY(40px); }
-
-  /* Copied toast */
+  /* Toast */
   .toast {
-    position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px);
-    background: #fff; color: #000; padding: 12px 24px; border-radius: 0;
-    font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-    opacity: 0; transition: all 0.4s cubic-bezier(0.16,1,0.3,1); z-index: 999;
+    position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(8px);
+    background:#fff; color:#000;
+    padding:10px 20px; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
+    opacity:0; transition:all 0.4s cubic-bezier(0.16,1,0.3,1); z-index:999; pointer-events:none;
   }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-  /* Horizontal rule animation */
-  .hr-animated { transform: scaleX(0); transform-origin: left; }
+  /* HR scale */
+  .hr-line { transform:scaleX(0); transform-origin:left; }
 </style>
 </head>
 <body class="bg-black text-white font-sans overflow-x-hidden">
@@ -95,240 +93,199 @@ tailwind.config = {
 <div class="noise"></div>
 <div class="cursor-glow" id="cursorGlow"></div>
 
-<!-- Nav -->
-<nav class="fixed top-0 inset-x-0 z-50 bg-black/80 backdrop-blur-2xl border-b border-white/[0.06]">
-  <div class="max-w-[1400px] mx-auto px-8 md:px-12 h-16 flex items-center justify-between">
-    <div class="text-sm font-extrabold tracking-[0.2em] uppercase">Performativ<span class="text-white/20 align-super text-[9px] ml-1">AI</span></div>
-    <div class="flex items-center gap-8">
-      <a href="#how" class="text-[13px] font-medium text-white/30 hover:text-white transition-colors duration-300 hidden md:block magnetic">How it works</a>
-      <a href="#api" class="text-[13px] font-medium text-white/30 hover:text-white transition-colors duration-300 hidden md:block magnetic">API</a>
-      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank" class="text-[13px] font-medium text-white/30 hover:text-white transition-colors duration-300 hidden md:block magnetic">GitHub</a>
-      <a href="#demo" class="btn-outline border border-white/60 text-white text-[12px] font-bold tracking-[0.15em] uppercase px-6 py-3 magnetic"><span>Try it live</span></a>
+<!-- NAV -->
+<nav class="fixed top-0 inset-x-0 z-50 bg-black/75 backdrop-blur-2xl border-b border-white/[0.05]">
+  <div class="max-w-6xl mx-auto px-6 md:px-10 h-14 flex items-center justify-between">
+    <span class="text-xs font-bold tracking-[0.2em] uppercase text-white/60">Performativ <span class="text-white/20">/ AI</span></span>
+    <div class="flex items-center gap-1">
+      <a href="#how" class="text-xs text-white/30 hover:text-white/70 px-3 py-2 rounded transition-colors hidden md:block">How it works</a>
+      <a href="#api" class="text-xs text-white/30 hover:text-white/70 px-3 py-2 rounded transition-colors hidden md:block">API</a>
+      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank" class="text-xs text-white/30 hover:text-white/70 px-3 py-2 rounded transition-colors hidden md:block">GitHub</a>
+      <a href="#demo" class="btn-fill border border-white/40 text-white text-[11px] font-bold tracking-[0.12em] uppercase px-5 py-2.5 ml-3">
+        <span>Try it live</span>
+      </a>
     </div>
   </div>
 </nav>
 
-<!-- Hero -->
-<section class="min-h-screen flex flex-col items-center justify-center text-center px-8 relative" id="hero">
-  <h1 class="split-text text-[clamp(70px,13vw,180px)] font-black tracking-[-0.05em] leading-[0.85] uppercase" data-parallax="-0.15">
-    NEWS
-  </h1>
-  <h1 class="split-text text-[clamp(70px,13vw,180px)] font-black tracking-[-0.05em] leading-[0.85] uppercase text-white/[0.07]" data-parallax="-0.08">
-    CLASSIFIER
-  </h1>
-  <p class="mt-14 text-white/25 text-lg max-w-md leading-relaxed opacity-0" id="hero-sub" data-parallax="-0.05">
+<!-- HERO -->
+<section class="min-h-screen flex flex-col items-center justify-center text-center px-6 relative z-10 pt-14">
+  <div class="overflow-hidden mb-1">
+    <div class="word-inner text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase" id="h1a">News</div>
+  </div>
+  <div class="overflow-hidden mb-10">
+    <div class="word-inner text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white/[0.08]" id="h1b">Classifier</div>
+  </div>
+  <p class="reveal text-white/30 text-base md:text-lg max-w-sm leading-relaxed mb-10" id="hero-sub">
     AI-powered relevance classification<br>for Performativ's wealth management business.
   </p>
-  <a href="#demo" class="btn-outline mt-14 border border-white/40 text-white text-[11px] font-bold tracking-[0.2em] uppercase px-12 py-5 opacity-0 magnetic" id="hero-cta">
+  <a href="#demo" class="btn-fill reveal border border-white/35 text-white/80 text-[11px] font-bold tracking-[0.15em] uppercase px-10 py-4" id="hero-cta">
     <span>Classify an article</span>
   </a>
-  <!-- Scroll indicator -->
-  <div class="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-0" id="scroll-ind">
-    <div class="w-px h-16 bg-white/[0.06] relative overflow-hidden">
-      <div class="w-px h-8 bg-white/30 absolute" style="animation:scrollLine 2.5s ease-in-out infinite"></div>
+  <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 reveal" id="scroll-ind">
+    <div class="w-px h-12 bg-white/[0.08] relative overflow-hidden">
+      <div class="w-px h-6 bg-white/25 absolute" style="animation:scrollLine 2.5s ease-in-out infinite"></div>
     </div>
-    <span class="text-[9px] tracking-[0.4em] uppercase text-white/10">Scroll</span>
+    <span class="text-[9px] tracking-[0.35em] uppercase text-white/10">Scroll</span>
   </div>
 </section>
 
-<!-- Statement -->
-<section class="py-40 md:py-56 px-8 md:px-12 max-w-[1400px] mx-auto">
-  <div class="max-w-3xl ml-auto text-right">
-    <h2 class="split-text text-[clamp(36px,5.5vw,72px)] font-black tracking-[-0.03em] leading-[1.05] uppercase">
-      Understand which news
-    </h2>
-    <h2 class="split-text text-[clamp(36px,5.5vw,72px)] font-black tracking-[-0.03em] leading-[1.05] uppercase text-white/[0.12]">
-      actually matters.
-    </h2>
-    <p class="mt-10 text-white/25 text-base leading-relaxed max-w-md ml-auto reveal-el">
-      Paste any news article URL. Our AI reads it, classifies its relevance to wealth management, and returns structured reasoning in seconds.
+<!-- STATEMENT -->
+<section class="py-28 md:py-40 px-6 md:px-10 max-w-6xl mx-auto relative z-10">
+  <div class="max-w-2xl ml-auto text-right">
+    <div class="overflow-hidden"><div class="word-inner text-[clamp(28px,4vw,52px)] font-black tracking-[-0.025em] leading-[1.1] uppercase anim-word">Understand which news</div></div>
+    <div class="overflow-hidden"><div class="word-inner text-[clamp(28px,4vw,52px)] font-black tracking-[-0.025em] leading-[1.1] uppercase text-white/[0.1] anim-word">actually matters.</div></div>
+    <p class="reveal mt-8 text-white/25 text-sm leading-relaxed max-w-xs ml-auto">
+      Paste any news article URL. AI reads it, classifies its relevance to wealth management, and returns structured reasoning in seconds.
     </p>
   </div>
 </section>
 
-<!-- HR -->
-<div class="max-w-[1400px] mx-auto px-8 md:px-12">
-  <div class="h-px bg-white/[0.06] hr-animated"></div>
-</div>
+<div class="max-w-6xl mx-auto px-6 md:px-10 relative z-10"><div class="h-px bg-white/[0.05] hr-line"></div></div>
 
-<!-- Demo -->
-<section id="demo" class="py-40 md:py-56 px-8 md:px-12 max-w-[1400px] mx-auto">
-  <div class="grid md:grid-cols-2 gap-20 items-start">
+<!-- DEMO -->
+<section id="demo" class="py-28 md:py-40 px-6 md:px-10 max-w-6xl mx-auto relative z-10">
+  <div class="grid md:grid-cols-2 gap-16 items-start">
     <div>
-      <p class="text-[11px] font-bold tracking-[0.25em] uppercase text-white/15 mb-6 reveal-el">01 / Classify</p>
-      <h2 class="split-text text-[clamp(32px,4.5vw,56px)] font-black tracking-[-0.03em] leading-[1.05] uppercase mb-6">
-        Paste any article URL.
-      </h2>
-      <p class="text-white/25 leading-relaxed max-w-sm reveal-el">
+      <p class="reveal text-[10px] font-bold tracking-[0.2em] uppercase text-white/15 mb-5">01 / Classify</p>
+      <div class="overflow-hidden mb-5"><div class="word-inner text-[clamp(26px,3.5vw,44px)] font-black tracking-[-0.025em] leading-[1.1] uppercase anim-word">Paste any article URL.</div></div>
+      <p class="reveal text-white/20 text-sm leading-relaxed max-w-xs">
         Supports most news sites. Handles paywalls, JS-rendered pages, and geo-blocked content through intelligent fallback strategies.
       </p>
     </div>
-    <div class="tilt-card" id="demoCard">
-      <div class="bg-white/[0.02] border border-white/[0.06] p-8 md:p-10 relative overflow-hidden">
-        <!-- Card shine effect -->
-        <div class="absolute inset-0 opacity-0 transition-opacity duration-500 pointer-events-none" id="cardShine"
-          style="background:radial-gradient(600px circle at var(--mx) var(--my), rgba(255,255,255,0.04), transparent 40%)"></div>
 
-        <div class="flex gap-3 mb-6 relative">
-          <input type="url" id="url" placeholder="https://..." class="flex-1 bg-white/[0.04] border border-white/[0.08] px-5 py-3.5 text-sm text-white placeholder:text-white/10 outline-none focus:border-white/25 focus:bg-white/[0.06] transition-all duration-300 font-[inherit]" />
-          <button id="btn" class="btn-outline border border-white/50 text-white text-[11px] font-bold tracking-[0.15em] uppercase px-7 py-3.5 whitespace-nowrap disabled:opacity-20 disabled:cursor-not-allowed magnetic">
+    <!-- Demo card -->
+    <div class="tilt reveal" id="demoCard">
+      <div class="bg-white/[0.025] border border-white/[0.07] p-6 md:p-8 relative overflow-hidden" id="cardInner">
+        <div class="absolute inset-0 pointer-events-none opacity-0 transition-opacity duration-500" id="cardShine"
+          style="background:radial-gradient(500px circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.035), transparent 40%)"></div>
+        <div class="flex gap-2.5 mb-5 relative">
+          <input type="url" id="url" placeholder="https://..."
+            class="flex-1 bg-white/[0.04] border border-white/[0.07] px-4 py-3 text-sm text-white placeholder:text-white/10 outline-none focus:border-white/20 focus:bg-white/[0.06] transition-all duration-300 font-[inherit]" />
+          <button id="btn" class="btn-fill border border-white/40 text-white text-[10px] font-bold tracking-[0.12em] uppercase px-6 py-3 whitespace-nowrap disabled:opacity-20 disabled:cursor-not-allowed">
             <span id="btn-text">Classify</span>
           </button>
         </div>
-
-        <!-- Loading -->
-        <div id="loading" class="hidden py-10 text-center relative">
-          <div class="w-28 h-0.5 bg-white/[0.04] mx-auto mb-4 overflow-hidden loader-bar"></div>
-          <p class="text-xs text-white/15">Analyzing article...</p>
+        <div id="loading" class="hidden py-8 text-center relative">
+          <div class="w-24 h-px bg-white/[0.06] mx-auto mb-3 overflow-hidden loader-bar"></div>
+          <p class="text-[11px] text-white/15">Analyzing...</p>
         </div>
-
-        <!-- Error -->
-        <div id="error" class="hidden p-4 border border-red-500/20 text-red-400/70 text-sm mb-4 relative"></div>
-
-        <!-- Result -->
+        <div id="error" class="hidden p-3 border border-red-500/15 text-red-400/70 text-xs mb-4 relative"></div>
         <div id="result" class="hidden relative">
-          <div class="flex items-center justify-between mb-5 pt-2">
-            <span id="label" class="text-[11px] font-bold tracking-[0.15em] uppercase px-4 py-1.5"></span>
-            <span id="conf-num" class="text-sm font-bold text-white/20 tabular-nums tracking-wide"></span>
+          <div class="flex items-center justify-between mb-4 pt-1">
+            <span id="label" class="text-[10px] font-bold tracking-[0.12em] uppercase px-3 py-1.5"></span>
+            <span id="conf-num" class="text-sm font-bold text-white/20 tabular-nums"></span>
           </div>
-          <p id="reasoning" class="text-sm leading-[1.8] text-white/35 mb-5 pl-4 border-l border-white/[0.08]"></p>
-          <div id="topics" class="flex flex-wrap gap-2 mb-4"></div>
-          <p id="meta" class="text-[10px] text-white/10 tracking-wide uppercase"></p>
+          <p id="reasoning" class="text-xs leading-[1.9] text-white/30 mb-4 pl-3 border-l border-white/[0.07]"></p>
+          <div id="topics" class="flex flex-wrap gap-1.5 mb-3"></div>
+          <p id="meta" class="text-[10px] text-white/10 uppercase tracking-wider"></p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- HR -->
-<div class="max-w-[1400px] mx-auto px-8 md:px-12">
-  <div class="h-px bg-white/[0.06] hr-animated"></div>
-</div>
+<div class="max-w-6xl mx-auto px-6 md:px-10 relative z-10"><div class="h-px bg-white/[0.05] hr-line"></div></div>
 
-<!-- How it works -->
-<section id="how" class="py-40 md:py-56 px-8 md:px-12 max-w-[1400px] mx-auto">
-  <p class="text-[11px] font-bold tracking-[0.25em] uppercase text-white/15 mb-20 text-center reveal-el">How it works</p>
-  <div class="grid md:grid-cols-3 gap-0">
-    <div class="border border-white/[0.06] p-10 md:p-14 group hover:bg-white/[0.02] transition-colors duration-500 reveal-el">
-      <p class="text-[11px] font-bold tracking-[0.25em] text-white/10 mb-10 group-hover:text-white/20 transition-colors duration-500">01</p>
-      <h3 class="text-xl font-bold tracking-tight uppercase mb-5 group-hover:translate-x-2 transition-transform duration-500">Extract</h3>
-      <p class="text-sm leading-[1.9] text-white/20 group-hover:text-white/35 transition-colors duration-500">Fetches and parses article content via Jina Reader with BeautifulSoup fallback. Handles paywalls and JS-rendered pages.</p>
+<!-- HOW IT WORKS -->
+<section id="how" class="py-28 md:py-40 px-6 md:px-10 max-w-6xl mx-auto relative z-10">
+  <p class="reveal text-[10px] font-bold tracking-[0.2em] uppercase text-white/15 mb-14 text-center">How it works</p>
+  <div class="grid md:grid-cols-3 border border-white/[0.06]">
+    <div class="reveal p-8 md:p-10 border-r border-white/[0.06] group hover:bg-white/[0.02] transition-all duration-500">
+      <p class="text-[10px] font-bold tracking-[0.2em] text-white/10 mb-8 group-hover:text-white/25 transition-colors duration-500">01</p>
+      <h3 class="text-base font-bold uppercase mb-3 group-hover:translate-x-1 transition-transform duration-400">Extract</h3>
+      <p class="text-xs leading-[1.9] text-white/20 group-hover:text-white/40 transition-colors duration-500">Fetches and parses article content via Jina Reader with BeautifulSoup fallback. Handles paywalls and JS-rendered pages.</p>
     </div>
-    <div class="border border-white/[0.06] border-l-0 p-10 md:p-14 group hover:bg-white/[0.02] transition-colors duration-500 reveal-el">
-      <p class="text-[11px] font-bold tracking-[0.25em] text-white/10 mb-10 group-hover:text-white/20 transition-colors duration-500">02</p>
-      <h3 class="text-xl font-bold tracking-tight uppercase mb-5 group-hover:translate-x-2 transition-transform duration-500">Classify</h3>
-      <p class="text-sm leading-[1.9] text-white/20 group-hover:text-white/35 transition-colors duration-500">Claude AI analyzes the content against Performativ's domain — wealth management, compliance, regulation — and assigns a label.</p>
+    <div class="reveal p-8 md:p-10 border-r border-white/[0.06] group hover:bg-white/[0.02] transition-all duration-500">
+      <p class="text-[10px] font-bold tracking-[0.2em] text-white/10 mb-8 group-hover:text-white/25 transition-colors duration-500">02</p>
+      <h3 class="text-base font-bold uppercase mb-3 group-hover:translate-x-1 transition-transform duration-400">Classify</h3>
+      <p class="text-xs leading-[1.9] text-white/20 group-hover:text-white/40 transition-colors duration-500">Claude AI analyzes the content against Performativ's domain — wealth management, compliance, regulation — and assigns a label.</p>
     </div>
-    <div class="border border-white/[0.06] border-l-0 p-10 md:p-14 group hover:bg-white/[0.02] transition-colors duration-500 reveal-el">
-      <p class="text-[11px] font-bold tracking-[0.25em] text-white/10 mb-10 group-hover:text-white/20 transition-colors duration-500">03</p>
-      <h3 class="text-xl font-bold tracking-tight uppercase mb-5 group-hover:translate-x-2 transition-transform duration-500">Return</h3>
-      <p class="text-sm leading-[1.9] text-white/20 group-hover:text-white/35 transition-colors duration-500">Returns label, confidence, reasoning, and relevance topics as validated JSON — ready for dashboards or further processing.</p>
+    <div class="reveal p-8 md:p-10 group hover:bg-white/[0.02] transition-all duration-500">
+      <p class="text-[10px] font-bold tracking-[0.2em] text-white/10 mb-8 group-hover:text-white/25 transition-colors duration-500">03</p>
+      <h3 class="text-base font-bold uppercase mb-3 group-hover:translate-x-1 transition-transform duration-400">Return</h3>
+      <p class="text-xs leading-[1.9] text-white/20 group-hover:text-white/40 transition-colors duration-500">Returns label, confidence, reasoning, and relevance topics as validated JSON — ready for dashboards or further processing.</p>
     </div>
   </div>
 </section>
 
-<!-- Big statement -->
-<section class="py-40 md:py-56 bg-white/[0.015] border-y border-white/[0.06] overflow-hidden">
-  <div class="max-w-[1400px] mx-auto px-8 md:px-12 text-center">
-    <h2 class="split-text text-[clamp(42px,7vw,100px)] font-black tracking-[-0.04em] leading-[0.9] uppercase italic">
-      Good news.
-    </h2>
-    <h2 class="split-text text-[clamp(42px,7vw,100px)] font-black tracking-[-0.04em] leading-[0.9] uppercase italic">
-      Bad news.
-    </h2>
-    <h2 class="split-text text-[clamp(42px,7vw,100px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white/[0.08] not-italic">
-      Unrelated.
-    </h2>
-    <p class="mt-14 text-white/20 text-base max-w-lg mx-auto leading-relaxed reveal-el">
+<!-- BOLD STATEMENT -->
+<section class="py-28 md:py-40 bg-white/[0.015] border-y border-white/[0.05] overflow-hidden relative z-10">
+  <div class="max-w-6xl mx-auto px-6 md:px-10 text-center">
+    <div class="overflow-hidden"><div class="word-inner text-[clamp(38px,6vw,88px)] font-black tracking-[-0.035em] leading-[0.95] uppercase italic anim-word">Good news.</div></div>
+    <div class="overflow-hidden"><div class="word-inner text-[clamp(38px,6vw,88px)] font-black tracking-[-0.035em] leading-[0.95] uppercase italic anim-word">Bad news.</div></div>
+    <div class="overflow-hidden"><div class="word-inner text-[clamp(38px,6vw,88px)] font-black tracking-[-0.035em] leading-[0.95] uppercase text-white/[0.07] anim-word">Unrelated.</div></div>
+    <p class="reveal mt-10 text-white/20 text-sm max-w-md mx-auto leading-relaxed">
       Three labels. Calibrated confidence scoring. Structured reasoning. Every classification explained.
     </p>
   </div>
 </section>
 
-<!-- Marquee -->
-<section class="py-16 border-b border-white/[0.06] overflow-hidden">
-  <div class="relative">
-    <div class="marquee-track flex gap-20 items-center whitespace-nowrap w-max">
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">Python</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">FastAPI</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">Claude AI</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">Jina Reader</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">Docker</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">Render</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">pytest</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">Python</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">FastAPI</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">Claude AI</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">Jina Reader</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">Docker</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">Render</span>
-      <span class="text-white/[0.03]">/</span>
-      <span class="text-3xl md:text-4xl font-black tracking-tight text-white/[0.04] uppercase">pytest</span>
-      <span class="text-white/[0.03]">/</span>
-    </div>
+<!-- MARQUEE -->
+<section class="py-12 border-b border-white/[0.05] overflow-hidden relative z-10">
+  <div class="marquee-track flex gap-16 items-center whitespace-nowrap w-max">
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">Python</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">FastAPI</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">Claude AI</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">Jina Reader</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">Docker</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">Render</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">pytest</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">Python</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">FastAPI</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">Claude AI</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">Jina Reader</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">Docker</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">Render</span><span class="text-white/[0.03] text-xl">/</span>
+    <span class="text-2xl font-black uppercase text-white/[0.04] tracking-tight">pytest</span><span class="text-white/[0.03] text-xl">/</span>
   </div>
 </section>
 
 <!-- API -->
-<section id="api" class="py-40 md:py-56 px-8 md:px-12 max-w-[1400px] mx-auto">
-  <div class="grid md:grid-cols-2 gap-20 items-start">
+<section id="api" class="py-28 md:py-40 px-6 md:px-10 max-w-6xl mx-auto relative z-10">
+  <div class="grid md:grid-cols-2 gap-16 items-start">
     <div>
-      <p class="text-[11px] font-bold tracking-[0.25em] uppercase text-white/15 mb-6 reveal-el">02 / API</p>
-      <h2 class="split-text text-[clamp(32px,4.5vw,56px)] font-black tracking-[-0.03em] leading-[1.05] uppercase mb-6">
-        RESTful endpoints.
-      </h2>
-      <p class="text-white/25 leading-relaxed max-w-sm mb-12 reveal-el">
-        Three endpoints covering health monitoring, article classification, and retrieval of recent results.
+      <p class="reveal text-[10px] font-bold tracking-[0.2em] uppercase text-white/15 mb-5">02 / API</p>
+      <div class="overflow-hidden mb-5"><div class="word-inner text-[clamp(26px,3.5vw,44px)] font-black tracking-[-0.025em] leading-[1.1] uppercase anim-word">RESTful endpoints.</div></div>
+      <p class="reveal text-white/20 text-sm leading-relaxed max-w-xs mb-10">
+        Three endpoints covering health monitoring, classification, and retrieval of recent results.
       </p>
-      <div class="space-y-0 divide-y divide-white/[0.06] reveal-el">
-        <div class="flex items-center gap-4 py-5 group cursor-default">
-          <span class="text-[10px] font-bold tracking-wider px-2.5 py-1 border border-emerald-500/20 text-emerald-400/50 font-mono group-hover:border-emerald-500/40 group-hover:text-emerald-400/80 transition-all duration-300">GET</span>
+      <div class="divide-y divide-white/[0.05] reveal">
+        <div class="flex items-center gap-3 py-4 group">
+          <span class="text-[9px] font-bold tracking-wider px-2 py-1 border border-emerald-500/20 text-emerald-400/50 font-mono group-hover:border-emerald-500/40 group-hover:text-emerald-400 transition-all duration-300">GET</span>
           <span class="text-sm text-white/30 font-mono group-hover:text-white/60 transition-colors duration-300">/health</span>
-          <span class="text-[11px] text-white/10 ml-auto group-hover:text-white/25 transition-colors duration-300">Service status</span>
+          <span class="text-[10px] text-white/10 ml-auto group-hover:text-white/25 transition-colors duration-300">Status</span>
         </div>
-        <div class="flex items-center gap-4 py-5 group cursor-default">
-          <span class="text-[10px] font-bold tracking-wider px-2.5 py-1 border border-indigo-500/20 text-indigo-400/50 font-mono group-hover:border-indigo-500/40 group-hover:text-indigo-400/80 transition-all duration-300">POST</span>
+        <div class="flex items-center gap-3 py-4 group">
+          <span class="text-[9px] font-bold tracking-wider px-2 py-1 border border-indigo-500/20 text-indigo-400/50 font-mono group-hover:border-indigo-500/40 group-hover:text-indigo-400 transition-all duration-300">POST</span>
           <span class="text-sm text-white/30 font-mono group-hover:text-white/60 transition-colors duration-300">/classify</span>
-          <span class="text-[11px] text-white/10 ml-auto group-hover:text-white/25 transition-colors duration-300">Classify article</span>
+          <span class="text-[10px] text-white/10 ml-auto group-hover:text-white/25 transition-colors duration-300">Classify</span>
         </div>
-        <div class="flex items-center gap-4 py-5 group cursor-default">
-          <span class="text-[10px] font-bold tracking-wider px-2.5 py-1 border border-emerald-500/20 text-emerald-400/50 font-mono group-hover:border-emerald-500/40 group-hover:text-emerald-400/80 transition-all duration-300">GET</span>
+        <div class="flex items-center gap-3 py-4 group">
+          <span class="text-[9px] font-bold tracking-wider px-2 py-1 border border-emerald-500/20 text-emerald-400/50 font-mono group-hover:border-emerald-500/40 group-hover:text-emerald-400 transition-all duration-300">GET</span>
           <span class="text-sm text-white/30 font-mono group-hover:text-white/60 transition-colors duration-300">/latest</span>
-          <span class="text-[11px] text-white/10 ml-auto group-hover:text-white/25 transition-colors duration-300">Recent results</span>
+          <span class="text-[10px] text-white/10 ml-auto group-hover:text-white/25 transition-colors duration-300">History</span>
         </div>
       </div>
     </div>
-    <div class="reveal-el">
-      <div class="border border-white/[0.06] overflow-hidden group relative">
-        <div class="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between">
-          <span class="text-[10px] font-bold tracking-[0.15em] uppercase text-white/15">Example</span>
-          <button onclick="copyCode()" class="text-[10px] font-bold tracking-[0.15em] uppercase text-white/10 hover:text-white/40 transition-colors cursor-pointer magnetic" id="copyBtn">Copy</button>
+    <div class="reveal">
+      <div class="border border-white/[0.06] overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-white/[0.05] flex items-center justify-between">
+          <span class="text-[9px] font-bold tracking-[0.15em] uppercase text-white/15">Example request</span>
+          <button onclick="copyCode()" id="copyBtn" class="text-[9px] font-bold tracking-[0.12em] uppercase text-white/15 hover:text-white/40 transition-colors">Copy</button>
         </div>
-        <div class="p-6 overflow-x-auto" id="codeBlock">
-<pre class="text-xs leading-[2] text-white/25 font-mono"><span class="text-white/10"># Classify a news article</span>
-curl <span class="text-white/40">-X</span> POST /classify \
-  <span class="text-white/40">-H</span> <span class="text-white/15">"Content-Type: application/json"</span> \
-  <span class="text-white/40">-d</span> <span class="text-white/15">'{"url": "https://..."}'</span>
+        <div class="p-5 overflow-x-auto" id="codeBlock">
+<pre class="text-[11px] leading-[2] text-white/20 font-mono"><span class="text-white/10"># Classify a news article</span>
+curl <span class="text-white/35">-X</span> POST /classify \
+  <span class="text-white/35">-H</span> <span class="text-white/15">"Content-Type: application/json"</span> \
+  <span class="text-white/35">-d</span> <span class="text-white/15">'{"url": "https://..."}'</span>
 
 <span class="text-white/10"># Response</span>
 {
   <span class="text-white/15">"label"</span>: <span class="text-white/15">"GOOD_NEWS"</span>,
-  <span class="text-white/15">"confidence"</span>: <span class="text-white/40">0.87</span>,
-  <span class="text-white/15">"reasoning"</span>: <span class="text-white/15">"..."</span>,
-  <span class="text-white/15">"relevance_topics"</span>: [<span class="text-white/15">"regulation"</span>],
-  <span class="text-white/15">"processed_at"</span>: <span class="text-white/15">"2025-..."</span>
+  <span class="text-white/15">"confidence"</span>: <span class="text-white/35">0.87</span>,
+  <span class="text-white/15">"reasoning"</span>: <span class="text-white/15">"FiDA regulation..."</span>,
+  <span class="text-white/15">"relevance_topics"</span>: [<span class="text-white/15">"regulation"</span>]
 }</pre>
         </div>
       </div>
@@ -336,164 +293,120 @@ curl <span class="text-white/40">-X</span> POST /classify \
   </div>
 </section>
 
-<!-- HR -->
-<div class="max-w-[1400px] mx-auto px-8 md:px-12">
-  <div class="h-px bg-white/[0.06] hr-animated"></div>
-</div>
+<div class="max-w-6xl mx-auto px-6 md:px-10 relative z-10"><div class="h-px bg-white/[0.05] hr-line"></div></div>
 
-<!-- History -->
-<section id="history-section" class="py-24 px-8 md:px-12 max-w-[1400px] mx-auto hidden">
-  <p class="text-[11px] font-bold tracking-[0.25em] uppercase text-white/15 mb-10">Recent classifications</p>
-  <div id="history" class="divide-y divide-white/[0.06]"></div>
+<!-- HISTORY -->
+<section id="history-section" class="py-16 px-6 md:px-10 max-w-6xl mx-auto relative z-10 hidden">
+  <p class="text-[10px] font-bold tracking-[0.2em] uppercase text-white/15 mb-8">Recent classifications</p>
+  <div id="history" class="divide-y divide-white/[0.05]"></div>
 </section>
 
-<!-- Footer -->
-<footer class="border-t border-white/[0.06]">
-  <div class="max-w-[1400px] mx-auto px-8 md:px-12 py-14 flex flex-col md:flex-row items-center justify-between gap-6">
-    <p class="text-[11px] tracking-[0.15em] uppercase text-white/10">Built for <a href="https://www.performativ.com" target="_blank" class="text-white/25 hover:text-white transition magnetic">Performativ</a></p>
-    <div class="flex gap-10">
-      <a href="/docs" class="text-[11px] tracking-[0.15em] uppercase text-white/10 hover:text-white/30 transition magnetic">Docs</a>
-      <a href="/health" class="text-[11px] tracking-[0.15em] uppercase text-white/10 hover:text-white/30 transition magnetic">Status</a>
-      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank" class="text-[11px] tracking-[0.15em] uppercase text-white/10 hover:text-white/30 transition magnetic">Source</a>
+<!-- FOOTER -->
+<footer class="border-t border-white/[0.05] relative z-10">
+  <div class="max-w-6xl mx-auto px-6 md:px-10 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
+    <p class="text-[10px] tracking-[0.15em] uppercase text-white/10">
+      Built for <a href="https://www.performativ.com" target="_blank" class="text-white/25 hover:text-white/60 transition">Performativ</a> — Case study
+    </p>
+    <div class="flex gap-8">
+      <a href="/docs" class="text-[10px] tracking-[0.12em] uppercase text-white/10 hover:text-white/35 transition">Docs</a>
+      <a href="/health" class="text-[10px] tracking-[0.12em] uppercase text-white/10 hover:text-white/35 transition">Status</a>
+      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank" class="text-[10px] tracking-[0.12em] uppercase text-white/10 hover:text-white/35 transition">Source</a>
     </div>
   </div>
 </footer>
 
-<!-- Toast -->
-<div class="toast" id="toast">Copied to clipboard</div>
+<div class="toast" id="toast">Copied</div>
 
 <script>
 gsap.registerPlugin(ScrollTrigger);
 
-/* ---- SPLIT TEXT INTO CHARS ---- */
-document.querySelectorAll(".split-text").forEach(function(el) {
-  var text = el.textContent;
-  el.innerHTML = "";
-  text.split("").forEach(function(c) {
-    var span = document.createElement("span");
-    span.className = "char";
-    span.textContent = c === " " ? "\u00A0" : c;
-    el.appendChild(span);
-  });
+/* ---- HERO ENTRANCE ---- */
+gsap.to(["#h1a","#h1b"], {
+  translateY: 0, opacity: 1, duration: 1.1, stagger: 0.12, ease: "power4.out",
+  delay: 0.2
+});
+gsap.to("#hero-sub", { opacity: 1, y: 0, duration: 0.9, delay: 0.8, ease: "power3.out" });
+gsap.to("#hero-cta", { opacity: 1, y: 0, duration: 0.9, delay: 1.0, ease: "power3.out" });
+gsap.to("#scroll-ind", { opacity: 1, y: 0, duration: 0.9, delay: 1.3, ease: "power3.out" });
 
+/* ---- WORD ANIMATIONS ON SCROLL ---- */
+document.querySelectorAll(".anim-word").forEach(function(el) {
+  gsap.set(el, { translateY: "100%", opacity: 0 });
   ScrollTrigger.create({
-    trigger: el,
-    start: "top 85%",
+    trigger: el.parentElement,
+    start: "top 88%",
     onEnter: function() {
-      gsap.to(el.querySelectorAll(".char"), {
-        opacity: 1, y: 0,
-        duration: 0.6,
-        stagger: 0.02,
-        ease: "power3.out"
-      });
+      gsap.to(el, { translateY: 0, opacity: 1, duration: 0.85, ease: "power4.out" });
     },
     once: true
   });
 });
 
 /* ---- REVEAL ELEMENTS ---- */
-document.querySelectorAll(".reveal-el").forEach(function(el) {
-  gsap.set(el, { opacity: 0, y: 40 });
+document.querySelectorAll(".reveal").forEach(function(el) {
+  gsap.set(el, { opacity: 0, y: 28 });
   ScrollTrigger.create({
     trigger: el,
-    start: "top 85%",
+    start: "top 88%",
     onEnter: function() {
-      gsap.to(el, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" });
+      gsap.to(el, { opacity: 1, y: 0, duration: 0.75, ease: "power3.out" });
     },
     once: true
   });
 });
 
-/* ---- HR ANIMATIONS ---- */
-document.querySelectorAll(".hr-animated").forEach(function(el) {
+/* ---- HR LINES ---- */
+document.querySelectorAll(".hr-line").forEach(function(el) {
   ScrollTrigger.create({
     trigger: el,
-    start: "top 90%",
+    start: "top 92%",
     onEnter: function() {
-      gsap.to(el, { scaleX: 1, duration: 1.2, ease: "power3.inOut" });
+      gsap.to(el, { scaleX: 1, duration: 1.1, ease: "power3.inOut" });
     },
     once: true
-  });
-});
-
-/* ---- HERO ENTRANCE ---- */
-gsap.to("#hero-sub", { opacity: 1, delay: 1.2, duration: 0.8 });
-gsap.to("#hero-cta", { opacity: 1, delay: 1.5, duration: 0.8 });
-gsap.to("#scroll-ind", { opacity: 1, delay: 1.8, duration: 0.8 });
-
-/* ---- PARALLAX ---- */
-document.querySelectorAll("[data-parallax]").forEach(function(el) {
-  var speed = parseFloat(el.getAttribute("data-parallax"));
-  ScrollTrigger.create({
-    trigger: "#hero",
-    start: "top top",
-    end: "bottom top",
-    onUpdate: function(self) {
-      gsap.set(el, { y: self.progress * 300 * speed });
-    }
   });
 });
 
 /* ---- CURSOR GLOW ---- */
 var glow = document.getElementById("cursorGlow");
 document.addEventListener("mousemove", function(e) {
-  gsap.to(glow, { x: e.clientX, y: e.clientY, duration: 0.6, ease: "power2.out" });
+  gsap.to(glow, { x: e.clientX, y: e.clientY, duration: 0.8, ease: "power2.out" });
 });
 
-/* ---- DEMO CARD TILT + SHINE ---- */
+/* ---- DEMO CARD 3D TILT + SHINE ---- */
 var card = document.getElementById("demoCard");
 var shine = document.getElementById("cardShine");
 if (card) {
   card.addEventListener("mousemove", function(e) {
-    var rect = card.getBoundingClientRect();
-    var x = (e.clientX - rect.left) / rect.width - 0.5;
-    var y = (e.clientY - rect.top) / rect.height - 0.5;
-    gsap.to(card, {
-      rotateY: x * 6, rotateX: -y * 6,
-      duration: 0.4, ease: "power2.out"
-    });
-    shine.style.setProperty("--mx", (e.clientX - rect.left) + "px");
-    shine.style.setProperty("--my", (e.clientY - rect.top) + "px");
+    var r = card.getBoundingClientRect();
+    var x = (e.clientX - r.left) / r.width - 0.5;
+    var y = (e.clientY - r.top) / r.height - 0.5;
+    gsap.to(card, { rotateY: x * 5, rotateX: -y * 5, duration: 0.35, ease: "power2.out" });
+    shine.style.setProperty("--mx", (e.clientX - r.left) + "px");
+    shine.style.setProperty("--my", (e.clientY - r.top) + "px");
     shine.style.opacity = "1";
   });
   card.addEventListener("mouseleave", function() {
-    gsap.to(card, { rotateY: 0, rotateX: 0, duration: 0.6, ease: "power3.out" });
+    gsap.to(card, { rotateY: 0, rotateX: 0, duration: 0.7, ease: "power3.out" });
     shine.style.opacity = "0";
   });
 }
 
-/* ---- MAGNETIC BUTTONS ---- */
-document.querySelectorAll(".magnetic").forEach(function(el) {
-  el.addEventListener("mousemove", function(e) {
-    var rect = el.getBoundingClientRect();
-    var x = e.clientX - rect.left - rect.width / 2;
-    var y = e.clientY - rect.top - rect.height / 2;
-    gsap.to(el, { x: x * 0.2, y: y * 0.2, duration: 0.3, ease: "power2.out" });
-  });
-  el.addEventListener("mouseleave", function() {
-    gsap.to(el, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.5)" });
-  });
-});
-
 /* ---- COPY CODE ---- */
 function copyCode() {
-  var code = document.getElementById("codeBlock").innerText;
-  navigator.clipboard.writeText(code);
-  var btn = document.getElementById("copyBtn");
-  btn.textContent = "Copied!";
-  var toast = document.getElementById("toast");
-  toast.classList.add("show");
+  navigator.clipboard.writeText(document.getElementById("codeBlock").innerText);
+  document.getElementById("copyBtn").textContent = "Copied!";
+  var t = document.getElementById("toast");
+  t.classList.add("show");
   setTimeout(function() {
-    btn.textContent = "Copy";
-    toast.classList.remove("show");
+    document.getElementById("copyBtn").textContent = "Copy";
+    t.classList.remove("show");
   }, 2000);
 }
 
 /* ---- CLASSIFY ---- */
 document.getElementById("btn").addEventListener("click", classify);
-document.getElementById("url").addEventListener("keydown", function(e) {
-  if (e.key === "Enter") classify();
-});
+document.getElementById("url").addEventListener("keydown", function(e) { if (e.key === "Enter") classify(); });
 
 async function classify() {
   var url = document.getElementById("url").value.trim();
@@ -504,24 +417,18 @@ async function classify() {
   document.getElementById("loading").classList.remove("hidden");
   document.getElementById("result").classList.add("hidden");
   document.getElementById("error").classList.add("hidden");
-
   try {
     var res = await fetch("/classify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: {"Content-Type":"application/json"},
       body: JSON.stringify({ url: url })
     });
-    if (!res.ok) {
-      var errData = await res.json();
-      throw new Error(errData.detail || "Request failed");
-    }
+    if (!res.ok) throw new Error((await res.json()).detail || "Request failed");
     var data = await res.json();
     showResult(data);
     loadHistory();
-  } catch (e) {
-    var errEl = document.getElementById("error");
-    errEl.textContent = e.message;
-    errEl.classList.remove("hidden");
+  } catch(e) {
+    var el = document.getElementById("error");
+    el.textContent = e.message; el.classList.remove("hidden");
   } finally {
     btn.disabled = false;
     document.getElementById("btn-text").textContent = "Classify";
@@ -531,66 +438,54 @@ async function classify() {
 
 function showResult(d) {
   var label = document.getElementById("label");
-  label.textContent = d.label.replace("_", " ");
-  label.className = "text-[11px] font-bold tracking-[0.15em] uppercase px-4 py-1.5";
-  if (d.label === "GOOD_NEWS") label.classList.add("border", "border-emerald-500/30", "text-emerald-400/80");
-  else if (d.label === "BAD_NEWS") label.classList.add("border", "border-red-500/30", "text-red-400/80");
-  else label.classList.add("border", "border-white/10", "text-white/30");
-
+  label.textContent = d.label.replace("_"," ");
+  label.className = "text-[10px] font-bold tracking-[0.12em] uppercase px-3 py-1.5";
+  if (d.label === "GOOD_NEWS") label.classList.add("border","border-emerald-500/25","text-emerald-400/80");
+  else if (d.label === "BAD_NEWS") label.classList.add("border","border-red-500/25","text-red-400/80");
+  else label.classList.add("border","border-white/10","text-white/30");
   document.getElementById("conf-num").textContent = Math.round(d.confidence * 100) + "%";
   document.getElementById("reasoning").textContent = d.reasoning;
-
-  var topicsEl = document.getElementById("topics");
-  topicsEl.innerHTML = "";
-  (d.relevance_topics || []).forEach(function(t) {
-    var span = document.createElement("span");
-    span.className = "px-3 py-1 border border-white/[0.06] text-[11px] font-medium text-white/20 tracking-wide uppercase";
-    span.textContent = t;
-    topicsEl.appendChild(span);
+  var t = document.getElementById("topics");
+  t.innerHTML = "";
+  (d.relevance_topics||[]).forEach(function(topic) {
+    var s = document.createElement("span");
+    s.className = "px-2.5 py-1 border border-white/[0.06] text-[10px] font-medium text-white/20 uppercase tracking-wider";
+    s.textContent = topic;
+    t.appendChild(s);
   });
-
   document.getElementById("meta").textContent = "Processed " + new Date(d.processed_at).toLocaleString();
   document.getElementById("result").classList.remove("hidden");
-  gsap.from("#result", { opacity: 0, y: 20, duration: 0.5, ease: "power3.out" });
+  gsap.from("#result", { opacity:0, y:16, duration:0.5, ease:"power3.out" });
 }
 
 async function loadHistory() {
   try {
-    var res = await fetch("/latest?limit=5");
-    var items = await res.json();
+    var items = await (await fetch("/latest?limit=5")).json();
     if (!items.length) return;
     document.getElementById("history-section").classList.remove("hidden");
-    var container = document.getElementById("history");
-    container.innerHTML = "";
+    var c = document.getElementById("history");
+    c.innerHTML = "";
     items.forEach(function(d, i) {
       var div = document.createElement("div");
-      div.className = "flex items-center gap-4 py-5 cursor-pointer group";
-      div.style.opacity = "0";
-
+      div.className = "flex items-center gap-3 py-4 cursor-pointer group opacity-0";
       var badge = document.createElement("span");
-      badge.className = "text-[10px] font-bold tracking-[0.1em] uppercase px-3 py-1 flex-shrink-0 transition-all duration-300";
-      if (d.label === "GOOD_NEWS") badge.classList.add("border", "border-emerald-500/20", "text-emerald-400/50", "group-hover:border-emerald-500/40", "group-hover:text-emerald-400/80");
-      else if (d.label === "BAD_NEWS") badge.classList.add("border", "border-red-500/20", "text-red-400/50", "group-hover:border-red-500/40", "group-hover:text-red-400/80");
-      else badge.classList.add("border", "border-white/[0.06]", "text-white/15", "group-hover:border-white/15", "group-hover:text-white/30");
-      badge.textContent = d.label.replace("_", " ");
-
-      var urlSpan = document.createElement("span");
-      urlSpan.className = "flex-1 text-xs text-white/10 truncate font-mono group-hover:text-white/25 transition-colors duration-300";
-      urlSpan.textContent = d.url;
-
+      badge.className = "text-[9px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 flex-shrink-0 border transition-all duration-300";
+      if (d.label==="GOOD_NEWS") badge.classList.add("border-emerald-500/15","text-emerald-400/50","group-hover:border-emerald-500/35","group-hover:text-emerald-400");
+      else if (d.label==="BAD_NEWS") badge.classList.add("border-red-500/15","text-red-400/50","group-hover:border-red-500/35","group-hover:text-red-400");
+      else badge.classList.add("border-white/[0.05]","text-white/15","group-hover:border-white/15","group-hover:text-white/35");
+      badge.textContent = d.label.replace("_"," ");
+      var urlS = document.createElement("span");
+      urlS.className = "flex-1 text-[11px] text-white/10 truncate font-mono group-hover:text-white/25 transition-colors duration-300";
+      urlS.textContent = d.url;
       var conf = document.createElement("span");
-      conf.className = "text-xs font-bold text-white/[0.06] tabular-nums group-hover:text-white/15 transition-colors duration-300";
-      conf.textContent = Math.round(d.confidence * 100) + "%";
-
-      div.appendChild(badge);
-      div.appendChild(urlSpan);
-      div.appendChild(conf);
+      conf.className = "text-xs font-bold text-white/[0.07] tabular-nums group-hover:text-white/20 transition-colors duration-300";
+      conf.textContent = Math.round(d.confidence*100)+"%";
+      div.appendChild(badge); div.appendChild(urlS); div.appendChild(conf);
       div.addEventListener("click", function() { showResult(d); document.getElementById("demo").scrollIntoView({behavior:"smooth"}); });
-      container.appendChild(div);
-
-      gsap.to(div, { opacity: 1, delay: i * 0.1, duration: 0.5 });
+      c.appendChild(div);
+      gsap.to(div, { opacity:1, delay: i*0.08, duration:0.5 });
     });
-  } catch (e) {}
+  } catch(e) {}
 }
 
 loadHistory();
