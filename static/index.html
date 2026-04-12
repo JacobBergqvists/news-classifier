@@ -521,10 +521,14 @@ function showResult(d) {
   animateNum(confEl, Math.round(d.confidence * 100));
 
   document.getElementById("reasoning").textContent = d.reasoning;
-  var topicsHtml = (d.relevance_topics || []).map(function(t) {
-    return "<span class=\"r-topic\">" + t + "</span>";
-  }).join("");
-  document.getElementById("topics").innerHTML = topicsHtml;
+  var topicsEl = document.getElementById("topics");
+  topicsEl.innerHTML = "";
+  (d.relevance_topics || []).forEach(function(t) {
+    var span = document.createElement("span");
+    span.className = "r-topic";
+    span.textContent = t;
+    topicsEl.appendChild(span);
+  });
   document.getElementById("footer-text").textContent = "Processed " + new Date(d.processed_at).toLocaleString();
   document.getElementById("result").style.display = "block";
 }

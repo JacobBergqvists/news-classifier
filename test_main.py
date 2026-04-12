@@ -8,9 +8,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app, classify_with_claude, fetch_article_text, latest_results
+from main import app, classify_with_claude, fetch_article_text, latest_results, rate_limit_store
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def clear_rate_limits():
+    """Reset rate limiting between tests."""
+    rate_limit_store.clear()
+    yield
 
 
 # --- Health & UI ---

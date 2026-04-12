@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -10,7 +11,7 @@ import anthropic
 import httpx
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, field_validator
 
@@ -36,6 +37,11 @@ client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 # In-memory store for recent classifications (resets on restart).
 # A production system would use a database, but this is sufficient for a demo.
 latest_results: list[dict] = []
+
+# Simple rate limiting: max 10 requests per minute per IP
+rate_limit_store: dict[str, list[float]] = {}
+RATE_LIMIT = 10
+RATE_WINDOW = 60  # seconds
 
 # --- Classification prompt ---
 
@@ -222,12 +228,22 @@ def health():
 
 
 @app.post("/classify", response_model=ClassifyResponse)
-def classify(request: ClassifyRequest):
+def classify(request: ClassifyRequest, req: Request):
     """Classify a news article by its relevance to Performativ's business.
 
     Fetches the article content, sends it to Claude for analysis, and returns
     a structured classification with label, confidence, reasoning, and topics.
     """
+    # Rate limiting
+    client_ip = req.client.host if req.client else "unknown"
+    now = time.time()
+    timestamps = rate_limit_store.get(client_ip, [])
+    timestamps = [t for t in timestamps if now - t < RATE_WINDOW]
+    if len(timestamps) >= RATE_LIMIT:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Max 10 requests per minute.")
+    timestamps.append(now)
+    rate_limit_store[client_ip] = timestamps
+
     url = request.url
     logger.info("Classifying: %s", url)
 
