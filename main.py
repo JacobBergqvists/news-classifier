@@ -94,15 +94,50 @@ Confidence scoring guidelines (be precise, do NOT default to 0.72 or other round
 - 0.10-0.29: Very unlikely to be relevant
 Use the FULL range. Vary your scores — 0.63, 0.78, 0.41, 0.87 are all valid. Never round to the nearest 5 or 10.
 
+Relevance score: a single number from -1.0 to 1.0 that combines relevance AND sentiment:
+- +0.7 to +1.0: Highly relevant, very positive for Performativ
+- +0.3 to +0.7: Relevant, somewhat positive
+- +0.01 to +0.3: Slightly relevant, mildly positive
+- 0.0: Completely unrelated to Performativ
+- -0.01 to -0.3: Slightly relevant, mildly negative
+- -0.3 to -0.7: Relevant, somewhat negative
+- -0.7 to -1.0: Highly relevant, very negative for Performativ
+The further from 0, the more relevant. The sign indicates positive or negative impact.
+
 Respond ONLY with a JSON object in this exact format (no markdown, no extra text):
 {
   "label": "GOOD_NEWS" | "BAD_NEWS" | "UNRELATED",
   "confidence": 0.0-1.0,
+  "relevance_score": -1.0 to 1.0,
   "reasoning": "1-2 sentence explanation",
   "relevance_topics": ["topic1", "topic2"]
 }"""
 
 VALID_LABELS = {"GOOD_NEWS", "BAD_NEWS", "UNRELATED"}
+
+# Common error page patterns that indicate we didn't get real content
+ERROR_PAGE_PATTERNS = [
+    "404 not found", "page not found", "page cannot be found",
+    "this page doesn't exist", "this page does not exist",
+    "404 error", "error 404", "not found - ",
+    "403 forbidden", "access denied",
+    "sorry, we couldn't find", "the page you requested",
+]
+
+
+def detect_error_page(text: str) -> bool:
+    """Check if fetched content looks like an error page rather than an article."""
+    lower = text[:2000].lower()
+    # Check for error page patterns
+    for pattern in ERROR_PAGE_PATTERNS:
+        if pattern in lower:
+            return True
+    # Very short content after stripping is likely an error page
+    stripped = text.strip()
+    if len(stripped) < 300 and any(w in lower for w in ["404", "error", "not found", "forbidden"]):
+        return True
+    return False
+
 
 # --- Core logic ---
 
@@ -121,8 +156,11 @@ async def fetch_article_text(url: str) -> str:
         response.raise_for_status()
         text = response.text.strip()
         if len(text) > 200:
-            logger.info("Fetched article via Jina Reader (%d chars)", len(text))
-            return text[:8000]
+            if detect_error_page(text):
+                logger.warning("Jina Reader returned an error page for %s", url)
+            else:
+                logger.info("Fetched article via Jina Reader (%d chars)", len(text))
+                return text[:8000]
     except httpx.TimeoutException:
         logger.warning("Jina Reader timed out for %s, trying direct fetch", url)
     except httpx.HTTPStatusError as e:
@@ -144,8 +182,11 @@ async def fetch_article_text(url: str) -> str:
         text = article.get_text(separator="\n", strip=True) if article else ""
 
         if len(text) > 200:
-            logger.info("Fetched article via direct HTTP (%d chars)", len(text))
-            return text[:8000]
+            if detect_error_page(text):
+                logger.warning("Direct fetch returned an error page for %s", url)
+            else:
+                logger.info("Fetched article via direct HTTP (%d chars)", len(text))
+                return text[:8000]
     except httpx.TimeoutException:
         raise HTTPException(status_code=504, detail="Article fetch timed out. The site may be slow or unreachable.")
     except httpx.HTTPStatusError as e:
@@ -196,6 +237,7 @@ async def classify_with_claude(url: str, article_text: str) -> dict:
         raise HTTPException(status_code=500, detail="Classification returned an invalid label.")
 
     result.setdefault("confidence", 0.5)
+    result.setdefault("relevance_score", 0.0)
     result.setdefault("reasoning", "No reasoning provided.")
     result.setdefault("relevance_topics", [])
 
@@ -232,6 +274,7 @@ class ClassifyResponse(BaseModel):
     url: str
     label: str
     confidence: float
+    relevance_score: float
     reasoning: str
     relevance_topics: list[str]
     processed_at: str
@@ -280,6 +323,7 @@ async def classify(request: ClassifyRequest, req: Request):
         "url": url,
         "label": classification["label"],
         "confidence": classification["confidence"],
+        "relevance_score": classification.get("relevance_score", 0.0),
         "reasoning": classification["reasoning"],
         "relevance_topics": classification.get("relevance_topics", []),
         "processed_at": datetime.now(timezone.utc).isoformat(),
