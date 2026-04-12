@@ -110,8 +110,8 @@ tailwind.config = {
 
 <!-- HERO -->
 <section class="min-h-screen flex flex-col items-center justify-center text-center px-6 relative z-10 pt-14" style="position:relative;">
-  <div id="wavesContainer" style="position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
-    <svg id="wavesSVG" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;opacity:0.35;"></svg>
+  <div id="wavesContainer" style="position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;-webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 75%);mask-image:radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 75%);">
+    <svg id="wavesSVG" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;opacity:0;"></svg>
   </div>
   <div class="overflow-hidden mb-1">
     <div class="word-inner text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase" id="h1a">News</div>
@@ -620,9 +620,8 @@ import { createNoise2D } from 'https://cdn.jsdelivr.net/npm/simplex-noise@4.0.3/
   setSize();
   setLines();
 
-  // Fade in
-  gsap.to(svg, { opacity: 0.35, duration: 2, delay: 0.5, ease: "power2.inOut" });
-  svg.style.opacity = "0";
+  // Fade in subtly
+  gsap.to(svg, { opacity: 0.12, duration: 2, delay: 0.5, ease: "power2.inOut" });
 
   requestAnimationFrame(tick);
 })();
