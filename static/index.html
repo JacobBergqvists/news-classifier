@@ -1,504 +1,212 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-[#09090b] antialiased">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>News Classifier — Performativ</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+    }
+  }
+}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;}
-  ::selection{background:#3b5bdb;color:#fff;}
-  html{scroll-behavior:smooth;}
-
-  :root{
-    --bg:#0a0a0c;
-    --surface:#111114;
-    --border:rgba(255,255,255,0.06);
-    --text-1:#e8e8ec;
-    --text-2:rgba(255,255,255,0.55);
-    --text-3:rgba(255,255,255,0.25);
-    --text-4:rgba(255,255,255,0.10);
-    --accent:#6c8aff;
-    --accent-dim:rgba(108,138,255,0.08);
-    --green:#34d399;
-    --red:#f87171;
-    --radius:12px;
-  }
-
-  body{
-    font-family:'Inter',system-ui,-apple-system,sans-serif;
-    background:var(--bg);
-    color:var(--text-1);
-    overflow-x:hidden;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-    font-feature-settings:'cv11','ss01';
-  }
-
-  /* --- SUBTLE GRID BG --- */
-  .grid-bg{
-    position:fixed;inset:0;z-index:0;pointer-events:none;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-    background-size:64px 64px;
-    mask-image:radial-gradient(ellipse 70% 50% at 50% 0%, black 30%, transparent 100%);
-    -webkit-mask-image:radial-gradient(ellipse 70% 50% at 50% 0%, black 30%, transparent 100%);
-  }
-  .glow{
-    position:fixed;top:-200px;left:50%;transform:translateX(-50%);
-    width:800px;height:500px;
-    background:radial-gradient(ellipse, rgba(108,138,255,0.06) 0%, transparent 70%);
-    z-index:0;pointer-events:none;
-  }
-
-  /* --- NAV --- */
-  nav{
-    position:fixed;top:0;left:0;right:0;z-index:100;
-    background:rgba(10,10,12,0.8);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-    border-bottom:1px solid var(--border);
-    height:56px;display:flex;align-items:center;
-    padding:0 32px;
-  }
-  .nav-inner{
-    max-width:1080px;width:100%;margin:0 auto;
-    display:flex;align-items:center;justify-content:space-between;
-  }
-  .logo{
-    font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
-    color:var(--text-2);
-  }
-  .logo span{color:var(--text-4);}
-  .nav-links{display:flex;align-items:center;gap:8px;}
-  .nav-link{
-    color:var(--text-3);font-size:13px;font-weight:500;
-    text-decoration:none;padding:6px 12px;border-radius:8px;
-    transition:color 0.2s, background 0.2s;
-  }
-  .nav-link:hover{color:var(--text-2);background:rgba(255,255,255,0.04);}
-  .nav-cta{
-    color:var(--accent);font-size:13px;font-weight:600;
-    text-decoration:none;padding:6px 14px;border-radius:8px;
-    background:var(--accent-dim);
-    transition:all 0.2s;margin-left:4px;
-  }
-  .nav-cta:hover{background:rgba(108,138,255,0.14);}
-
-  /* --- CONTAINER --- */
-  .container{max-width:1080px;margin:0 auto;padding:0 32px;position:relative;z-index:1;}
-
-  /* --- HERO --- */
-  .hero{
-    padding:140px 0 100px;
-    display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
-  }
-  .hero-content{max-width:480px;}
-  .hero-eyebrow{
-    display:inline-flex;align-items:center;gap:8px;
-    font-size:12px;font-weight:600;color:var(--accent);
-    letter-spacing:0.5px;margin-bottom:24px;
-  }
-  .hero-eyebrow::before{
-    content:'';width:6px;height:6px;border-radius:50%;
-    background:var(--green);
-    box-shadow:0 0 8px rgba(52,211,153,0.4);
-  }
-  .hero h1{
-    font-size:40px;font-weight:700;line-height:1.2;
-    letter-spacing:-0.8px;margin-bottom:20px;color:var(--text-1);
-  }
-  .hero h1 em{font-style:normal;color:var(--text-3);}
-  .hero-desc{
-    font-size:15px;line-height:1.7;color:var(--text-2);
-    margin-bottom:36px;max-width:400px;
-  }
-  .hero-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
-  .btn-primary{
-    display:inline-flex;align-items:center;gap:8px;
-    background:#fff;color:#0a0a0c;
-    padding:10px 22px;border-radius:10px;border:none;
-    font-size:13px;font-weight:600;font-family:inherit;
-    cursor:pointer;transition:all 0.2s;text-decoration:none;
-  }
-  .btn-primary:hover{box-shadow:0 4px 16px rgba(255,255,255,0.1);transform:translateY(-1px);}
-  .btn-secondary{
-    display:inline-flex;align-items:center;gap:6px;
-    color:var(--text-3);font-size:13px;font-weight:500;
-    text-decoration:none;padding:10px 16px;border-radius:10px;
-    transition:color 0.2s;
-  }
-  .btn-secondary:hover{color:var(--text-2);}
-
-  /* --- DEMO CARD --- */
-  .demo-card{
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:16px;overflow:hidden;
-    box-shadow:0 8px 40px rgba(0,0,0,0.3);
-  }
-  .demo-header{
-    padding:14px 20px;border-bottom:1px solid var(--border);
-    display:flex;align-items:center;gap:8px;
-  }
-  .demo-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.08);}
-  .demo-dot:first-child{background:rgba(239,68,68,0.5);}
-  .demo-dot:nth-child(2){background:rgba(234,179,8,0.5);}
-  .demo-dot:nth-child(3){background:rgba(34,197,94,0.5);}
-  .demo-title{font-size:11px;color:var(--text-4);margin-left:8px;font-weight:500;}
-  .demo-body{padding:24px;}
-  .demo-input-row{display:flex;gap:8px;margin-bottom:16px;}
-  .demo-input{
-    flex:1;background:rgba(255,255,255,0.04);
-    border:1px solid var(--border);border-radius:8px;
-    padding:10px 14px;font-size:13px;color:var(--text-1);
-    font-family:inherit;outline:none;transition:border-color 0.2s;
-  }
-  .demo-input:focus{border-color:rgba(108,138,255,0.3);}
-  .demo-input::placeholder{color:var(--text-4);}
-  .demo-btn{
-    padding:10px 18px;border-radius:8px;border:none;
-    background:var(--accent);color:#fff;
-    font-size:13px;font-weight:600;font-family:inherit;
-    cursor:pointer;transition:all 0.2s;white-space:nowrap;
-  }
-  .demo-btn:hover{filter:brightness(1.1);}
-  .demo-btn:disabled{opacity:0.3;cursor:not-allowed;filter:none;}
-
-  /* --- LOADING --- */
-  .loading{display:none;text-align:center;padding:32px 0;}
-  .ld-bar{width:120px;height:2px;background:rgba(255,255,255,0.04);margin:0 auto 12px;border-radius:1px;overflow:hidden;}
-  .ld-bar::after{content:'';display:block;width:40%;height:100%;background:var(--accent);border-radius:1px;animation:ldSlide 1s ease-in-out infinite;}
-  @keyframes ldSlide{0%{transform:translateX(-100%);}100%{transform:translateX(350%);}}
-  .loading p{font-size:12px;color:var(--text-3);}
-
-  /* --- ERROR --- */
-  .error{display:none;padding:12px 16px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.1);border-radius:8px;color:var(--red);font-size:13px;margin-bottom:16px;}
-
-  /* --- RESULT --- */
-  .result{display:none;animation:fadeUp 0.4s ease;}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
-  .r-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-  .r-label{
-    font-size:12px;font-weight:700;letter-spacing:0.5px;
-    padding:5px 12px;border-radius:6px;
-  }
-  .r-label.GOOD_NEWS{background:rgba(52,211,153,0.1);color:var(--green);}
-  .r-label.BAD_NEWS{background:rgba(248,113,113,0.1);color:var(--red);}
-  .r-label.UNRELATED{background:rgba(255,255,255,0.04);color:var(--text-3);}
-  .r-conf{font-size:13px;font-weight:600;color:var(--text-3);font-variant-numeric:tabular-nums;}
-  .r-reasoning{
-    font-size:13px;line-height:1.7;color:var(--text-2);
-    margin-bottom:16px;padding:12px 16px;
-    background:rgba(255,255,255,0.02);border-radius:8px;
-    border-left:2px solid var(--border);
-  }
-  .r-topics{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
-  .r-topic{
-    padding:4px 10px;border:1px solid var(--border);border-radius:6px;
-    font-size:11px;font-weight:500;color:var(--text-3);
-  }
-  .r-meta{font-size:11px;color:var(--text-4);}
-
-  /* --- FEATURES --- */
-  .features{padding:60px 0 80px;border-top:1px solid var(--border);}
-  .features-label{
-    font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
-    color:var(--text-4);margin-bottom:40px;
-  }
-  .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:var(--radius);overflow:hidden;}
-  .feature{background:var(--bg);padding:32px 28px;}
-  .feature-icon{
-    width:36px;height:36px;border-radius:10px;
-    background:rgba(255,255,255,0.03);border:1px solid var(--border);
-    display:flex;align-items:center;justify-content:center;
-    margin-bottom:20px;color:var(--text-3);
-  }
-  .feature h3{font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text-1);}
-  .feature p{font-size:13px;line-height:1.6;color:var(--text-3);}
-
-  /* --- API SECTION --- */
-  .api-section{padding:80px 0;border-top:1px solid var(--border);}
-  .api-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;}
-  .api-content h2{font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:16px;}
-  .api-content p{font-size:14px;line-height:1.7;color:var(--text-2);margin-bottom:24px;}
-  .endpoint{
-    display:flex;align-items:center;gap:12px;
-    padding:12px 0;border-bottom:1px solid var(--border);
-  }
-  .endpoint:last-child{border-bottom:none;}
-  .method{
-    font-size:11px;font-weight:700;letter-spacing:0.5px;
-    padding:3px 8px;border-radius:4px;font-family:'SF Mono',Monaco,monospace;
-  }
-  .method.get{background:rgba(52,211,153,0.1);color:var(--green);}
-  .method.post{background:rgba(108,138,255,0.1);color:var(--accent);}
-  .endpoint-path{font-size:13px;font-weight:500;color:var(--text-2);font-family:'SF Mono',Monaco,monospace;}
-  .endpoint-desc{font-size:12px;color:var(--text-3);margin-left:auto;}
-
-  .code-block{
-    background:var(--surface);border:1px solid var(--border);
-    border-radius:var(--radius);overflow:hidden;
-  }
-  .code-header{
-    padding:10px 16px;border-bottom:1px solid var(--border);
-    font-size:11px;font-weight:600;color:var(--text-4);
-    display:flex;align-items:center;gap:8px;
-  }
-  .code-body{padding:20px;overflow-x:auto;}
-  .code-body pre{
-    font-size:12px;line-height:1.8;color:var(--text-2);
-    font-family:'SF Mono',Monaco,'Cascadia Code',monospace;
-    margin:0;white-space:pre;
-  }
-  .code-body .k{color:var(--accent);}
-  .code-body .s{color:var(--green);}
-  .code-body .c{color:var(--text-4);}
-
-  /* --- STACK --- */
-  .stack-section{padding:60px 0 80px;border-top:1px solid var(--border);}
-  .stack-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px;}
-  .stack-tag{
-    display:flex;align-items:center;gap:6px;
-    padding:8px 14px;border-radius:8px;
-    background:rgba(255,255,255,0.03);border:1px solid var(--border);
-    font-size:12px;font-weight:500;color:var(--text-2);
-    transition:border-color 0.2s;
-  }
-  .stack-tag:hover{border-color:rgba(255,255,255,0.12);}
-  .stack-tag .dot{width:6px;height:6px;border-radius:50%;}
-
-  /* --- HISTORY --- */
-  .history-section{padding:60px 0;border-top:1px solid var(--border);display:none;}
-  .history-section h2{font-size:14px;font-weight:600;margin-bottom:20px;color:var(--text-2);}
-  .h-item{
-    display:flex;align-items:center;gap:12px;
-    padding:10px 0;border-bottom:1px solid var(--border);
-    cursor:pointer;transition:opacity 0.2s;
-    opacity:0;transform:translateY(8px);animation:fadeUp 0.3s ease forwards;
-  }
-  .h-item:hover{opacity:0.7;}
-  .h-badge{
-    font-size:10px;font-weight:700;letter-spacing:0.3px;
-    padding:3px 10px;border-radius:4px;flex-shrink:0;
-  }
-  .h-badge.GOOD_NEWS{background:rgba(52,211,153,0.08);color:var(--green);}
-  .h-badge.BAD_NEWS{background:rgba(248,113,113,0.08);color:var(--red);}
-  .h-badge.UNRELATED{background:rgba(255,255,255,0.03);color:var(--text-3);}
-  .h-url{flex:1;font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .h-conf{font-size:12px;font-weight:600;color:var(--text-4);font-variant-numeric:tabular-nums;}
-
-  /* --- FOOTER --- */
-  footer{
-    border-top:1px solid var(--border);
-    padding:32px 0;display:flex;align-items:center;justify-content:space-between;
-  }
-  footer p{font-size:12px;color:var(--text-4);}
-  footer a{color:var(--text-3);text-decoration:none;font-weight:500;transition:color 0.2s;}
-  footer a:hover{color:var(--text-1);}
-  .footer-links{display:flex;gap:20px;}
-  .footer-links a{font-size:12px;color:var(--text-4);}
-  .footer-links a:hover{color:var(--text-2);}
-
-  /* --- ANIMATIONS --- */
-  .fade-in{opacity:0;transform:translateY(16px);transition:all 0.6s cubic-bezier(0.16,1,0.3,1);}
-  .fade-in.vis{opacity:1;transform:translateY(0);}
-
-  /* --- RESPONSIVE --- */
-  @media(max-width:840px){
-    nav{padding:0 20px;}
-    .container{padding:0 20px;}
-    .hero{grid-template-columns:1fr;gap:40px;padding:120px 0 60px;}
-    .hero-content{max-width:100%;}
-    .features-grid{grid-template-columns:1fr;}
-    .api-grid{grid-template-columns:1fr;gap:40px;}
-    .demo-input-row{flex-direction:column;}
-    footer{flex-direction:column;gap:16px;text-align:center;}
-  }
+  /* Only custom stuff Tailwind can't do */
+  @keyframes slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
+  .loader-bar::after { content:''; display:block; width:40%; height:100%; background:#6366f1; border-radius:2px; animation:slide 1s ease-in-out infinite; }
 </style>
 </head>
-<body>
+<body class="bg-[#09090b] text-zinc-100 font-sans">
 
-<div class="grid-bg"></div>
-<div class="glow"></div>
-
-<nav>
-  <div class="nav-inner">
-    <div class="logo">Performativ <span>/ News Classifier</span></div>
-    <div class="nav-links">
-      <a href="/docs" class="nav-link">API Docs</a>
-      <a href="/health" class="nav-link">Status</a>
-      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank" class="nav-link">GitHub</a>
-      <a href="#demo" class="nav-cta">Try it live</a>
+<!-- Nav -->
+<nav class="fixed top-0 inset-x-0 z-50 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/[0.06]">
+  <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+    <div class="text-xs font-bold tracking-widest uppercase text-zinc-400">Performativ <span class="text-zinc-700">/</span> <span class="text-zinc-600">News Classifier</span></div>
+    <div class="flex items-center gap-1">
+      <a href="/docs" class="text-xs text-zinc-500 hover:text-zinc-300 px-3 py-1.5 rounded-lg hover:bg-white/[0.04] transition">API Docs</a>
+      <a href="/health" class="text-xs text-zinc-500 hover:text-zinc-300 px-3 py-1.5 rounded-lg hover:bg-white/[0.04] transition">Status</a>
+      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank" class="text-xs text-zinc-500 hover:text-zinc-300 px-3 py-1.5 rounded-lg hover:bg-white/[0.04] transition">GitHub</a>
+      <a href="#demo" class="text-xs font-semibold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/[0.15] px-3.5 py-1.5 rounded-lg ml-2 transition">Try it live</a>
     </div>
   </div>
 </nav>
 
-<div class="container">
+<main class="max-w-5xl mx-auto px-6">
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-content">
-      <div class="hero-eyebrow fade-in">AI-Powered Classification Engine</div>
-      <h1 class="fade-in">Classify news by relevance <em>in seconds.</em></h1>
-      <p class="hero-desc fade-in">An AI agent that reads, analyzes, and classifies news articles by their relevance to Performativ's wealth management business.</p>
-      <div class="hero-actions fade-in">
-        <a href="#demo" class="btn-primary">
+  <!-- Hero -->
+  <section class="pt-36 pb-24 grid md:grid-cols-2 gap-16 items-center">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-indigo-400 tracking-wide mb-6">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]"></span>
+        AI-Powered Classification
+      </div>
+      <h1 class="text-4xl md:text-[42px] font-bold tracking-tight leading-[1.15] mb-5">
+        Classify news by<br>relevance <span class="text-zinc-600">in seconds.</span>
+      </h1>
+      <p class="text-[15px] leading-relaxed text-zinc-500 mb-9 max-w-sm">
+        An AI agent that reads, analyzes, and classifies news articles by their relevance to Performativ's wealth management business.
+      </p>
+      <div class="flex items-center gap-4">
+        <a href="#demo" class="inline-flex items-center gap-2 bg-white text-zinc-900 text-sm font-semibold px-5 py-2.5 rounded-xl hover:shadow-[0_4px_16px_rgba(255,255,255,0.1)] hover:-translate-y-0.5 transition-all">
           Try the classifier
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
-        <a href="/docs" class="btn-secondary">
-          View API docs
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
-        </a>
+        <a href="/docs" class="text-sm text-zinc-600 hover:text-zinc-400 transition">View API docs &rarr;</a>
       </div>
     </div>
-    <div class="fade-in" id="demo">
-      <div class="demo-card">
-        <div class="demo-header">
-          <div class="demo-dot"></div><div class="demo-dot"></div><div class="demo-dot"></div>
-          <span class="demo-title">news-classifier</span>
+
+    <!-- Demo card -->
+    <div id="demo" class="bg-[#111114] border border-white/[0.06] rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
+      <div class="px-5 py-3 border-b border-white/[0.06] flex items-center gap-2">
+        <div class="w-2.5 h-2.5 rounded-full bg-red-500/40"></div>
+        <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/40"></div>
+        <div class="w-2.5 h-2.5 rounded-full bg-green-500/40"></div>
+        <span class="text-[11px] text-zinc-700 ml-2 font-medium">news-classifier</span>
+      </div>
+      <div class="p-6">
+        <div class="flex gap-2 mb-4">
+          <input type="url" id="url" placeholder="Paste a news article URL..." class="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-700 outline-none focus:border-indigo-500/30 transition font-[inherit]" />
+          <button id="btn" class="px-5 py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-semibold transition whitespace-nowrap disabled:opacity-30 disabled:cursor-not-allowed">Classify</button>
         </div>
-        <div class="demo-body">
-          <div class="demo-input-row">
-            <input type="url" class="demo-input" id="url" placeholder="Paste a news article URL..." />
-            <button class="demo-btn" id="btn">Classify</button>
+
+        <!-- Loading -->
+        <div id="loading" class="hidden py-8 text-center">
+          <div class="w-28 h-0.5 bg-white/[0.04] rounded-full overflow-hidden mx-auto mb-3 loader-bar"></div>
+          <p class="text-xs text-zinc-600">Analyzing article...</p>
+        </div>
+
+        <!-- Error -->
+        <div id="error" class="hidden p-3 bg-red-500/[0.06] border border-red-500/10 rounded-lg text-red-400 text-sm mb-4"></div>
+
+        <!-- Result -->
+        <div id="result" class="hidden animate-[fadeUp_0.4s_ease]">
+          <div class="flex items-center justify-between mb-4">
+            <span id="label" class="text-xs font-bold tracking-wide px-3 py-1 rounded-md"></span>
+            <span id="conf-num" class="text-sm font-semibold text-zinc-600 tabular-nums"></span>
           </div>
-          <div class="loading" id="loading">
-            <div class="ld-bar"></div>
-            <p>Analyzing article...</p>
-          </div>
-          <div class="error" id="error"></div>
-          <div class="result" id="result">
-            <div class="r-header">
-              <span class="r-label" id="label"></span>
-              <span class="r-conf" id="conf-num"></span>
-            </div>
-            <div class="r-reasoning" id="reasoning"></div>
-            <div class="r-topics" id="topics"></div>
-            <div class="r-meta" id="meta"></div>
-          </div>
+          <div class="text-sm leading-relaxed text-zinc-400 mb-4 p-4 bg-white/[0.02] rounded-lg border-l-2 border-white/[0.06]" id="reasoning"></div>
+          <div id="topics" class="flex flex-wrap gap-1.5 mb-3"></div>
+          <p id="meta" class="text-[11px] text-zinc-700"></p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- FEATURES -->
-  <section class="features fade-in">
-    <div class="features-label">How it works</div>
-    <div class="features-grid">
-      <div class="feature">
-        <div class="feature-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+  <!-- How it works -->
+  <section class="py-16 border-t border-white/[0.06]">
+    <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-zinc-700 mb-10">How it works</p>
+    <div class="grid md:grid-cols-3 gap-px bg-white/[0.06] rounded-xl overflow-hidden">
+      <div class="bg-[#09090b] p-8">
+        <div class="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-5 text-zinc-600">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
-        <h3>Article extraction</h3>
-        <p>Fetches and parses content from any news URL using Jina Reader with BeautifulSoup fallback, handling paywalls and JS-rendered pages.</p>
+        <h3 class="text-sm font-semibold mb-2">Article extraction</h3>
+        <p class="text-[13px] leading-relaxed text-zinc-600">Fetches content via Jina Reader with BeautifulSoup fallback. Handles paywalls and JS-rendered pages.</p>
       </div>
-      <div class="feature">
-        <div class="feature-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <div class="bg-[#09090b] p-8">
+        <div class="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-5 text-zinc-600">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a4 4 0 014 4c0 1.95-2 3-2 8h-4c0-5-2-6.05-2-8a4 4 0 014-4z"/><line x1="10" y1="18" x2="14" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/></svg>
         </div>
-        <h3>AI classification</h3>
-        <p>Claude analyzes the content against Performativ's domain — wealth management, compliance, regulation — and assigns a structured label.</p>
+        <h3 class="text-sm font-semibold mb-2">AI classification</h3>
+        <p class="text-[13px] leading-relaxed text-zinc-600">Claude analyzes content against Performativ's domain — wealth management, compliance, and regulation.</p>
       </div>
-      <div class="feature">
-        <div class="feature-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <div class="bg-[#09090b] p-8">
+        <div class="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-5 text-zinc-600">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
         </div>
-        <h3>Structured output</h3>
-        <p>Returns label, confidence score, reasoning, and relevance topics as validated JSON — ready for dashboards, alerts, or further processing.</p>
+        <h3 class="text-sm font-semibold mb-2">Structured output</h3>
+        <p class="text-[13px] leading-relaxed text-zinc-600">Returns label, confidence, reasoning, and topics as validated JSON — ready for dashboards or alerts.</p>
       </div>
     </div>
   </section>
 
   <!-- API -->
-  <section class="api-section fade-in">
-    <div class="api-grid">
-      <div class="api-content">
-        <h2>RESTful API</h2>
-        <p>Three endpoints covering health monitoring, article classification, and retrieval of recent results.</p>
-        <div class="endpoint">
-          <span class="method get">GET</span>
-          <span class="endpoint-path">/health</span>
-          <span class="endpoint-desc">Service status</span>
-        </div>
-        <div class="endpoint">
-          <span class="method post">POST</span>
-          <span class="endpoint-path">/classify</span>
-          <span class="endpoint-desc">Classify article</span>
-        </div>
-        <div class="endpoint">
-          <span class="method get">GET</span>
-          <span class="endpoint-path">/latest</span>
-          <span class="endpoint-desc">Recent results</span>
+  <section class="py-16 border-t border-white/[0.06]">
+    <div class="grid md:grid-cols-2 gap-16 items-start">
+      <div>
+        <h2 class="text-2xl font-bold tracking-tight mb-4">RESTful API</h2>
+        <p class="text-sm text-zinc-500 leading-relaxed mb-8">Three endpoints covering health monitoring, classification, and retrieval of recent results.</p>
+        <div class="space-y-0 divide-y divide-white/[0.06]">
+          <div class="flex items-center gap-3 py-3">
+            <span class="text-[11px] font-bold tracking-wide px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono">GET</span>
+            <span class="text-sm text-zinc-400 font-mono">/health</span>
+            <span class="text-xs text-zinc-700 ml-auto">Service status</span>
+          </div>
+          <div class="flex items-center gap-3 py-3">
+            <span class="text-[11px] font-bold tracking-wide px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-mono">POST</span>
+            <span class="text-sm text-zinc-400 font-mono">/classify</span>
+            <span class="text-xs text-zinc-700 ml-auto">Classify article</span>
+          </div>
+          <div class="flex items-center gap-3 py-3">
+            <span class="text-[11px] font-bold tracking-wide px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono">GET</span>
+            <span class="text-sm text-zinc-400 font-mono">/latest</span>
+            <span class="text-xs text-zinc-700 ml-auto">Recent results</span>
+          </div>
         </div>
       </div>
-      <div class="code-block">
-        <div class="code-header">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      <div class="bg-[#111114] border border-white/[0.06] rounded-xl overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-white/[0.06] text-[11px] font-semibold text-zinc-700 flex items-center gap-2">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           Example request
         </div>
-        <div class="code-body">
-<pre><span class="c"># Classify a news article</span>
-curl <span class="k">-X</span> POST /classify \
-  <span class="k">-H</span> <span class="s">"Content-Type: application/json"</span> \
-  <span class="k">-d</span> <span class="s">'{"url": "https://finextra.com/..."}'</span>
+        <div class="p-5 overflow-x-auto">
+<pre class="text-xs leading-[1.8] text-zinc-500 font-mono"><span class="text-zinc-700"># Classify a news article</span>
+curl <span class="text-indigo-400">-X</span> POST /classify \
+  <span class="text-indigo-400">-H</span> <span class="text-emerald-400">"Content-Type: application/json"</span> \
+  <span class="text-indigo-400">-d</span> <span class="text-emerald-400">'{"url": "https://finextra.com/..."}'</span>
 
-<span class="c"># Response</span>
+<span class="text-zinc-700"># Response</span>
 {
-  <span class="s">"label"</span>: <span class="s">"GOOD_NEWS"</span>,
-  <span class="s">"confidence"</span>: <span class="k">0.87</span>,
-  <span class="s">"reasoning"</span>: <span class="s">"EU FiDA framework..."</span>,
-  <span class="s">"relevance_topics"</span>: [<span class="s">"regulation"</span>],
-  <span class="s">"processed_at"</span>: <span class="s">"2025-01-..."</span>
+  <span class="text-emerald-400">"label"</span>: <span class="text-emerald-400">"GOOD_NEWS"</span>,
+  <span class="text-emerald-400">"confidence"</span>: <span class="text-indigo-400">0.87</span>,
+  <span class="text-emerald-400">"reasoning"</span>: <span class="text-emerald-400">"EU FiDA framework..."</span>,
+  <span class="text-emerald-400">"relevance_topics"</span>: [<span class="text-emerald-400">"regulation"</span>],
+  <span class="text-emerald-400">"processed_at"</span>: <span class="text-emerald-400">"2025-01-..."</span>
 }</pre>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- STACK -->
-  <section class="stack-section fade-in">
-    <div class="features-label">Built with</div>
-    <div class="stack-row">
-      <div class="stack-tag"><div class="dot" style="background:#3776ab;"></div> Python</div>
-      <div class="stack-tag"><div class="dot" style="background:#009688;"></div> FastAPI</div>
-      <div class="stack-tag"><div class="dot" style="background:#d4a574;"></div> Claude AI</div>
-      <div class="stack-tag"><div class="dot" style="background:#4fc08d;"></div> Jina Reader</div>
-      <div class="stack-tag"><div class="dot" style="background:#e34f26;"></div> BeautifulSoup</div>
-      <div class="stack-tag"><div class="dot" style="background:#2496ed;"></div> Docker</div>
-      <div class="stack-tag"><div class="dot" style="background:#46e3b7;"></div> Render</div>
-      <div class="stack-tag"><div class="dot" style="background:#f05032;"></div> pytest</div>
+  <!-- Tech stack -->
+  <section class="py-16 border-t border-white/[0.06]">
+    <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-zinc-700 mb-6">Built with</p>
+    <div class="flex flex-wrap gap-2">
+      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#3776ab]"></span>Python</span>
+      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#009688]"></span>FastAPI</span>
+      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#d4a574]"></span>Claude AI</span>
+      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#4fc08d]"></span>Jina Reader</span>
+      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#e34f26]"></span>BeautifulSoup</span>
+      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#2496ed]"></span>Docker</span>
+      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#46e3b7]"></span>Render</span>
+      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#f05032]"></span>pytest</span>
     </div>
   </section>
 
-  <!-- HISTORY -->
-  <section class="history-section" id="history-section">
-    <h2>Recent classifications</h2>
-    <div id="history"></div>
+  <!-- History -->
+  <section id="history-section" class="py-16 border-t border-white/[0.06] hidden">
+    <p class="text-sm font-semibold text-zinc-400 mb-5">Recent classifications</p>
+    <div id="history" class="divide-y divide-white/[0.06]"></div>
   </section>
 
-  <!-- FOOTER -->
-  <footer>
-    <p>Built for <a href="https://www.performativ.com" target="_blank">Performativ</a> &mdash; Case study submission</p>
-    <div class="footer-links">
-      <a href="/docs">API Docs</a>
-      <a href="/health">Status</a>
-      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank">Source</a>
+  <!-- Footer -->
+  <footer class="py-8 border-t border-white/[0.06] flex flex-col md:flex-row items-center justify-between gap-4">
+    <p class="text-xs text-zinc-700">Built for <a href="https://www.performativ.com" target="_blank" class="text-zinc-500 hover:text-zinc-300 transition font-medium">Performativ</a> &mdash; Case study submission</p>
+    <div class="flex gap-5">
+      <a href="/docs" class="text-xs text-zinc-700 hover:text-zinc-400 transition">API Docs</a>
+      <a href="/health" class="text-xs text-zinc-700 hover:text-zinc-400 transition">Status</a>
+      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank" class="text-xs text-zinc-700 hover:text-zinc-400 transition">Source</a>
     </div>
   </footer>
 
-</div>
+</main>
 
 <script>
-/* ---- SCROLL ANIMATIONS ---- */
-var fadeEls = document.querySelectorAll(".fade-in");
-var obs = new IntersectionObserver(function(entries) {
-  entries.forEach(function(e) {
-    if (e.isIntersecting) { e.target.classList.add("vis"); obs.unobserve(e.target); }
-  });
-}, { threshold: 0.15 });
-fadeEls.forEach(function(el) { obs.observe(el); });
-
 /* ---- CLASSIFY ---- */
 document.getElementById("btn").addEventListener("click", classify);
 document.getElementById("url").addEventListener("keydown", function(e) {
@@ -511,9 +219,9 @@ async function classify() {
   var btn = document.getElementById("btn");
   btn.disabled = true;
   btn.textContent = "Analyzing...";
-  document.getElementById("loading").style.display = "block";
-  document.getElementById("result").style.display = "none";
-  document.getElementById("error").style.display = "none";
+  document.getElementById("loading").classList.remove("hidden");
+  document.getElementById("result").classList.add("hidden");
+  document.getElementById("error").classList.add("hidden");
 
   try {
     var res = await fetch("/classify", {
@@ -529,19 +237,23 @@ async function classify() {
     showResult(data);
     loadHistory();
   } catch (e) {
-    document.getElementById("error").textContent = e.message;
-    document.getElementById("error").style.display = "block";
+    var errEl = document.getElementById("error");
+    errEl.textContent = e.message;
+    errEl.classList.remove("hidden");
   } finally {
     btn.disabled = false;
     btn.textContent = "Classify";
-    document.getElementById("loading").style.display = "none";
+    document.getElementById("loading").classList.add("hidden");
   }
 }
 
 function showResult(d) {
   var label = document.getElementById("label");
   label.textContent = d.label.replace("_", " ");
-  label.className = "r-label " + d.label;
+  label.className = "text-xs font-bold tracking-wide px-3 py-1 rounded-md";
+  if (d.label === "GOOD_NEWS") label.classList.add("bg-emerald-500/10", "text-emerald-400");
+  else if (d.label === "BAD_NEWS") label.classList.add("bg-red-500/10", "text-red-400");
+  else label.classList.add("bg-white/[0.04]", "text-zinc-500");
 
   document.getElementById("conf-num").textContent = Math.round(d.confidence * 100) + "% confidence";
   document.getElementById("reasoning").textContent = d.reasoning;
@@ -550,13 +262,13 @@ function showResult(d) {
   topicsEl.innerHTML = "";
   (d.relevance_topics || []).forEach(function(t) {
     var span = document.createElement("span");
-    span.className = "r-topic";
+    span.className = "px-2.5 py-1 border border-white/[0.06] rounded-md text-[11px] font-medium text-zinc-500";
     span.textContent = t;
     topicsEl.appendChild(span);
   });
 
   document.getElementById("meta").textContent = "Processed " + new Date(d.processed_at).toLocaleString();
-  document.getElementById("result").style.display = "block";
+  document.getElementById("result").classList.remove("hidden");
 }
 
 async function loadHistory() {
@@ -564,30 +276,32 @@ async function loadHistory() {
     var res = await fetch("/latest?limit=5");
     var items = await res.json();
     if (!items.length) return;
-    document.getElementById("history-section").style.display = "block";
+    document.getElementById("history-section").classList.remove("hidden");
     var container = document.getElementById("history");
     container.innerHTML = "";
-    items.forEach(function(d, i) {
+    items.forEach(function(d) {
       var div = document.createElement("div");
-      div.className = "h-item";
-      div.style.animationDelay = (i * 0.06) + "s";
+      div.className = "flex items-center gap-3 py-3 cursor-pointer hover:opacity-60 transition";
 
       var badge = document.createElement("span");
-      badge.className = "h-badge " + d.label;
+      badge.className = "text-[10px] font-bold tracking-wide px-2.5 py-0.5 rounded flex-shrink-0";
+      if (d.label === "GOOD_NEWS") { badge.classList.add("bg-emerald-500/[0.08]", "text-emerald-400"); }
+      else if (d.label === "BAD_NEWS") { badge.classList.add("bg-red-500/[0.08]", "text-red-400"); }
+      else { badge.classList.add("bg-white/[0.03]", "text-zinc-600"); }
       badge.textContent = d.label.replace("_", " ");
 
       var urlSpan = document.createElement("span");
-      urlSpan.className = "h-url";
+      urlSpan.className = "flex-1 text-xs text-zinc-600 truncate";
       urlSpan.textContent = d.url;
 
       var conf = document.createElement("span");
-      conf.className = "h-conf";
+      conf.className = "text-xs font-semibold text-zinc-700 tabular-nums";
       conf.textContent = Math.round(d.confidence * 100) + "%";
 
       div.appendChild(badge);
       div.appendChild(urlSpan);
       div.appendChild(conf);
-      div.addEventListener("click", function() { showResult(d); window.scrollTo({top:0,behavior:'smooth'}); });
+      div.addEventListener("click", function() { showResult(d); window.scrollTo({top:0,behavior:"smooth"}); });
       container.appendChild(div);
     });
   } catch (e) {}
