@@ -125,7 +125,7 @@ tailwind.config = {
         </filter>
       </defs>
     </svg>
-    <div class="word-inner text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white/[0.08]" id="gooeyMorph" style="filter: url(#gooeyThreshold);">Classifier</div>
+    <div class="word-inner text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white/30" id="gooeyMorph" style="filter: url(#gooeyThreshold);">Classifier</div>
   </div>
   <p class="reveal text-white/30 text-base md:text-lg max-w-sm leading-relaxed mb-10" id="hero-sub">
     AI-powered relevance classification<br>for Performativ's wealth management business.
@@ -362,7 +362,7 @@ curl <span class="text-white/35">-X</span> POST /classify \
 gsap.registerPlugin(ScrollTrigger);
 
 /* ---- HERO ENTRANCE ---- */
-gsap.to(["#h1a","#h1b"], {
+gsap.to(["#h1a","#gooeyMorph"], {
   translateY: 0, opacity: 1, duration: 1.1, stagger: 0.12, ease: "power4.out",
   delay: 0.2
 });
