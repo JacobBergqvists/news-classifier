@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-[#09090b] antialiased">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,204 +9,338 @@
 tailwind.config = {
   theme: {
     extend: {
-      fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
     }
   }
 }
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  /* Only custom stuff Tailwind can't do */
+  /* Loader animation */
   @keyframes slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
-  .loader-bar::after { content:''; display:block; width:40%; height:100%; background:#6366f1; border-radius:2px; animation:slide 1s ease-in-out infinite; }
+  .loader-bar::after { content:''; display:block; width:40%; height:100%; background:#fff; border-radius:2px; animation:slide 1s ease-in-out infinite; }
+
+  /* Marquee */
+  @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  .marquee-track { animation: marquee 20s linear infinite; }
+  .marquee-track:hover { animation-play-state: paused; }
+
+  /* Scroll reveal */
+  .reveal { opacity:0; transform:translateY(60px); transition: all 0.9s cubic-bezier(0.16,1,0.3,1); }
+  .reveal.vis { opacity:1; transform:translateY(0); }
+  .reveal-left { opacity:0; transform:translateX(-60px); transition: all 0.9s cubic-bezier(0.16,1,0.3,1); }
+  .reveal-left.vis { opacity:1; transform:translateX(0); }
+  .reveal-right { opacity:0; transform:translateX(60px); transition: all 0.9s cubic-bezier(0.16,1,0.3,1); }
+  .reveal-right.vis { opacity:1; transform:translateX(0); }
+  .reveal-scale { opacity:0; transform:scale(0.92); transition: all 1s cubic-bezier(0.16,1,0.3,1); }
+  .reveal-scale.vis { opacity:1; transform:scale(1); }
+
+  /* Stagger children */
+  .stagger > *:nth-child(1) { transition-delay: 0s; }
+  .stagger > *:nth-child(2) { transition-delay: 0.1s; }
+  .stagger > *:nth-child(3) { transition-delay: 0.2s; }
+  .stagger > *:nth-child(4) { transition-delay: 0.3s; }
+
+  /* Smooth button hover */
+  .btn-outline {
+    position:relative; overflow:hidden;
+    transition: color 0.4s ease, border-color 0.3s ease;
+  }
+  .btn-outline::before {
+    content:''; position:absolute; inset:0;
+    background:#fff; transform:translateY(101%);
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+    z-index:0;
+  }
+  .btn-outline:hover::before { transform:translateY(0); }
+  .btn-outline:hover { color:#000; border-color:#fff; }
+  .btn-outline span { position:relative; z-index:1; }
+
+  /* Hero text shimmer */
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  /* Smooth scroll */
+  html { scroll-behavior: smooth; }
 </style>
 </head>
-<body class="bg-[#09090b] text-zinc-100 font-sans">
+<body class="bg-black text-white font-sans overflow-x-hidden">
 
 <!-- Nav -->
-<nav class="fixed top-0 inset-x-0 z-50 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/[0.06]">
-  <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-    <div class="text-xs font-bold tracking-widest uppercase text-zinc-400">Performativ <span class="text-zinc-700">/</span> <span class="text-zinc-600">News Classifier</span></div>
-    <div class="flex items-center gap-1">
-      <a href="/docs" class="text-xs text-zinc-500 hover:text-zinc-300 px-3 py-1.5 rounded-lg hover:bg-white/[0.04] transition">API Docs</a>
-      <a href="/health" class="text-xs text-zinc-500 hover:text-zinc-300 px-3 py-1.5 rounded-lg hover:bg-white/[0.04] transition">Status</a>
-      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank" class="text-xs text-zinc-500 hover:text-zinc-300 px-3 py-1.5 rounded-lg hover:bg-white/[0.04] transition">GitHub</a>
-      <a href="#demo" class="text-xs font-semibold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/[0.15] px-3.5 py-1.5 rounded-lg ml-2 transition">Try it live</a>
+<nav class="fixed top-0 inset-x-0 z-50 bg-black/80 backdrop-blur-2xl border-b border-white/[0.06]">
+  <div class="max-w-[1400px] mx-auto px-8 md:px-12 h-16 flex items-center justify-between">
+    <div class="text-sm font-extrabold tracking-[0.2em] uppercase">Performativ<span class="text-white/20 align-super text-[9px] ml-1">AI</span></div>
+    <div class="flex items-center gap-8">
+      <a href="#how" class="text-[13px] font-medium text-white/40 hover:text-white transition-colors duration-300 hidden md:block">How it works</a>
+      <a href="#api" class="text-[13px] font-medium text-white/40 hover:text-white transition-colors duration-300 hidden md:block">API</a>
+      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank" class="text-[13px] font-medium text-white/40 hover:text-white transition-colors duration-300 hidden md:block">GitHub</a>
+      <a href="#demo" class="btn-outline border border-white/60 text-white text-[12px] font-bold tracking-[0.15em] uppercase px-6 py-3 rounded-none"><span>Try it live</span></a>
     </div>
   </div>
 </nav>
 
-<main class="max-w-5xl mx-auto px-6">
-
-  <!-- Hero -->
-  <section class="pt-36 pb-24 grid md:grid-cols-2 gap-16 items-center">
-    <div>
-      <div class="flex items-center gap-2 text-xs font-semibold text-indigo-400 tracking-wide mb-6">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]"></span>
-        AI-Powered Classification
-      </div>
-      <h1 class="text-4xl md:text-[42px] font-bold tracking-tight leading-[1.15] mb-5">
-        Classify news by<br>relevance <span class="text-zinc-600">in seconds.</span>
-      </h1>
-      <p class="text-[15px] leading-relaxed text-zinc-500 mb-9 max-w-sm">
-        An AI agent that reads, analyzes, and classifies news articles by their relevance to Performativ's wealth management business.
-      </p>
-      <div class="flex items-center gap-4">
-        <a href="#demo" class="inline-flex items-center gap-2 bg-white text-zinc-900 text-sm font-semibold px-5 py-2.5 rounded-xl hover:shadow-[0_4px_16px_rgba(255,255,255,0.1)] hover:-translate-y-0.5 transition-all">
-          Try the classifier
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
-        <a href="/docs" class="text-sm text-zinc-600 hover:text-zinc-400 transition">View API docs &rarr;</a>
-      </div>
+<!-- Hero: Full screen centered text -->
+<section class="min-h-screen flex flex-col items-center justify-center text-center px-8 relative">
+  <h1 class="text-[clamp(60px,12vw,160px)] font-black tracking-[-0.04em] leading-[0.9] uppercase reveal">
+    NEWS
+  </h1>
+  <h1 class="text-[clamp(60px,12vw,160px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white/10 reveal" style="transition-delay:0.1s">
+    CLASSIFIER
+  </h1>
+  <p class="mt-12 text-white/30 text-base md:text-lg max-w-md leading-relaxed reveal" style="transition-delay:0.25s">
+    AI-powered relevance classification<br>for Performativ's wealth management business.
+  </p>
+  <a href="#demo" class="btn-outline mt-12 border border-white/50 text-white text-[11px] font-bold tracking-[0.2em] uppercase px-10 py-4 rounded-none reveal" style="transition-delay:0.35s">
+    <span>Classify an article</span>
+  </a>
+  <!-- Scroll indicator -->
+  <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 reveal" style="transition-delay:0.5s">
+    <div class="w-px h-12 bg-white/10 relative overflow-hidden">
+      <div class="w-px h-6 bg-white/40 absolute animate-[slide-down_2s_ease-in-out_infinite]" style="animation:scrollLine 2s ease-in-out infinite"></div>
     </div>
+    <span class="text-[10px] tracking-[0.3em] uppercase text-white/15">Scroll</span>
+  </div>
+</section>
 
-    <!-- Demo card -->
-    <div id="demo" class="bg-[#111114] border border-white/[0.06] rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
-      <div class="px-5 py-3 border-b border-white/[0.06] flex items-center gap-2">
-        <div class="w-2.5 h-2.5 rounded-full bg-red-500/40"></div>
-        <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/40"></div>
-        <div class="w-2.5 h-2.5 rounded-full bg-green-500/40"></div>
-        <span class="text-[11px] text-zinc-700 ml-2 font-medium">news-classifier</span>
-      </div>
-      <div class="p-6">
-        <div class="flex gap-2 mb-4">
-          <input type="url" id="url" placeholder="Paste a news article URL..." class="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-lg px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-700 outline-none focus:border-indigo-500/30 transition font-[inherit]" />
-          <button id="btn" class="px-5 py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-semibold transition whitespace-nowrap disabled:opacity-30 disabled:cursor-not-allowed">Classify</button>
+<style>
+@keyframes scrollLine { 0%{top:-50%} 100%{top:100%} }
+</style>
+
+<!-- Statement section -->
+<section class="py-32 md:py-48 px-8 md:px-12 max-w-[1400px] mx-auto">
+  <div class="max-w-3xl ml-auto text-right">
+    <h2 class="text-[clamp(32px,5vw,64px)] font-black tracking-[-0.03em] leading-[1.1] uppercase reveal">
+      Understand which<br>news actually<br><span class="text-white/15">matters.</span>
+    </h2>
+    <p class="mt-8 text-white/30 text-base leading-relaxed max-w-md ml-auto reveal" style="transition-delay:0.1s">
+      Paste any news article URL. Our AI reads it, classifies its relevance to wealth management, and returns structured reasoning in seconds.
+    </p>
+    <a href="#demo" class="btn-outline inline-block mt-10 border border-white/40 text-white/70 text-[11px] font-bold tracking-[0.15em] uppercase px-8 py-3.5 rounded-none reveal" style="transition-delay:0.2s">
+      <span>View demo</span>
+    </a>
+  </div>
+</section>
+
+<!-- Divider line -->
+<div class="max-w-[1400px] mx-auto px-8 md:px-12 reveal">
+  <div class="h-px bg-white/[0.06]"></div>
+</div>
+
+<!-- Demo section -->
+<section id="demo" class="py-32 md:py-48 px-8 md:px-12 max-w-[1400px] mx-auto">
+  <div class="grid md:grid-cols-2 gap-20 items-start">
+    <div class="reveal-left">
+      <p class="text-[11px] font-bold tracking-[0.2em] uppercase text-white/20 mb-6">01 / Classify</p>
+      <h2 class="text-[clamp(28px,4vw,52px)] font-black tracking-[-0.03em] leading-[1.05] uppercase mb-6">
+        Paste any<br>article URL.
+      </h2>
+      <p class="text-white/30 leading-relaxed max-w-sm">
+        Supports most news sites. Handles paywalls, JS-rendered pages, and geo-blocked content through intelligent fallback strategies.
+      </p>
+    </div>
+    <div class="reveal-right">
+      <div class="bg-white/[0.02] border border-white/[0.06] p-8 md:p-10">
+        <div class="flex gap-3 mb-6">
+          <input type="url" id="url" placeholder="https://..." class="flex-1 bg-white/[0.04] border border-white/[0.08] px-5 py-3.5 text-sm text-white placeholder:text-white/15 outline-none focus:border-white/20 transition font-[inherit]" />
+          <button id="btn" class="btn-outline border border-white/50 text-white text-[11px] font-bold tracking-[0.15em] uppercase px-7 py-3.5 rounded-none whitespace-nowrap disabled:opacity-20 disabled:cursor-not-allowed">
+            <span id="btn-text">Classify</span>
+          </button>
         </div>
 
         <!-- Loading -->
-        <div id="loading" class="hidden py-8 text-center">
-          <div class="w-28 h-0.5 bg-white/[0.04] rounded-full overflow-hidden mx-auto mb-3 loader-bar"></div>
-          <p class="text-xs text-zinc-600">Analyzing article...</p>
+        <div id="loading" class="hidden py-10 text-center">
+          <div class="w-28 h-0.5 bg-white/[0.04] mx-auto mb-4 overflow-hidden loader-bar"></div>
+          <p class="text-xs text-white/20">Analyzing article...</p>
         </div>
 
         <!-- Error -->
-        <div id="error" class="hidden p-3 bg-red-500/[0.06] border border-red-500/10 rounded-lg text-red-400 text-sm mb-4"></div>
+        <div id="error" class="hidden p-4 border border-red-500/20 text-red-400/80 text-sm mb-4"></div>
 
         <!-- Result -->
-        <div id="result" class="hidden animate-[fadeUp_0.4s_ease]">
-          <div class="flex items-center justify-between mb-4">
-            <span id="label" class="text-xs font-bold tracking-wide px-3 py-1 rounded-md"></span>
-            <span id="conf-num" class="text-sm font-semibold text-zinc-600 tabular-nums"></span>
+        <div id="result" class="hidden">
+          <div class="flex items-center justify-between mb-5 pt-2">
+            <span id="label" class="text-[11px] font-bold tracking-[0.15em] uppercase px-4 py-1.5"></span>
+            <span id="conf-num" class="text-sm font-bold text-white/20 tabular-nums tracking-wide"></span>
           </div>
-          <div class="text-sm leading-relaxed text-zinc-400 mb-4 p-4 bg-white/[0.02] rounded-lg border-l-2 border-white/[0.06]" id="reasoning"></div>
-          <div id="topics" class="flex flex-wrap gap-1.5 mb-3"></div>
-          <p id="meta" class="text-[11px] text-zinc-700"></p>
+          <p id="reasoning" class="text-sm leading-[1.8] text-white/40 mb-5 pl-4 border-l border-white/[0.08]"></p>
+          <div id="topics" class="flex flex-wrap gap-2 mb-4"></div>
+          <p id="meta" class="text-[10px] text-white/10 tracking-wide uppercase"></p>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- How it works -->
-  <section class="py-16 border-t border-white/[0.06]">
-    <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-zinc-700 mb-10">How it works</p>
-    <div class="grid md:grid-cols-3 gap-px bg-white/[0.06] rounded-xl overflow-hidden">
-      <div class="bg-[#09090b] p-8">
-        <div class="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-5 text-zinc-600">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+<!-- Divider -->
+<div class="max-w-[1400px] mx-auto px-8 md:px-12 reveal">
+  <div class="h-px bg-white/[0.06]"></div>
+</div>
+
+<!-- How it works -->
+<section id="how" class="py-32 md:py-48 px-8 md:px-12 max-w-[1400px] mx-auto">
+  <p class="text-[11px] font-bold tracking-[0.2em] uppercase text-white/20 mb-16 text-center reveal">How it works</p>
+  <div class="grid md:grid-cols-3 gap-0 stagger">
+    <div class="border border-white/[0.06] p-10 md:p-12 reveal">
+      <p class="text-[11px] font-bold tracking-[0.2em] text-white/15 mb-8">01</p>
+      <h3 class="text-lg font-bold tracking-tight uppercase mb-4">Extract</h3>
+      <p class="text-sm leading-[1.8] text-white/25">Fetches and parses article content via Jina Reader with BeautifulSoup fallback. Handles paywalls and JS-rendered pages.</p>
+    </div>
+    <div class="border border-white/[0.06] border-l-0 p-10 md:p-12 reveal">
+      <p class="text-[11px] font-bold tracking-[0.2em] text-white/15 mb-8">02</p>
+      <h3 class="text-lg font-bold tracking-tight uppercase mb-4">Classify</h3>
+      <p class="text-sm leading-[1.8] text-white/25">Claude AI analyzes the content against Performativ's domain — wealth management, compliance, regulation — and assigns a label.</p>
+    </div>
+    <div class="border border-white/[0.06] border-l-0 p-10 md:p-12 reveal">
+      <p class="text-[11px] font-bold tracking-[0.2em] text-white/15 mb-8">03</p>
+      <h3 class="text-lg font-bold tracking-tight uppercase mb-4">Return</h3>
+      <p class="text-sm leading-[1.8] text-white/25">Returns label, confidence, reasoning, and relevance topics as validated JSON — ready for dashboards or further processing.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Full-width statement -->
+<section class="py-32 md:py-48 bg-white/[0.02] border-y border-white/[0.06]">
+  <div class="max-w-[1400px] mx-auto px-8 md:px-12 text-center">
+    <h2 class="text-[clamp(36px,6vw,80px)] font-black tracking-[-0.04em] leading-[0.95] uppercase italic reveal">
+      Good news.<br>Bad news.<br><span class="text-white/15 not-italic">Unrelated.</span>
+    </h2>
+    <p class="mt-10 text-white/25 text-base max-w-lg mx-auto leading-relaxed reveal" style="transition-delay:0.15s">
+      Three labels. Calibrated confidence scoring. Structured reasoning. Every classification explained.
+    </p>
+  </div>
+</section>
+
+<!-- Tech stack marquee -->
+<section class="py-20 border-b border-white/[0.06] overflow-hidden reveal">
+  <p class="text-[11px] font-bold tracking-[0.2em] uppercase text-white/15 text-center mb-12">Built with</p>
+  <div class="relative overflow-hidden">
+    <div class="marquee-track flex gap-16 items-center whitespace-nowrap w-max">
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">Python</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">FastAPI</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">Claude AI</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">Jina Reader</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">BeautifulSoup</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">Docker</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">Render</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">pytest</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <!-- Duplicate for seamless loop -->
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">Python</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">FastAPI</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">Claude AI</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">Jina Reader</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">BeautifulSoup</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">Docker</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">Render</span>
+      <span class="text-white/[0.04]">&bull;</span>
+      <span class="text-2xl md:text-3xl font-black tracking-tight text-white/[0.07] uppercase">pytest</span>
+      <span class="text-white/[0.04]">&bull;</span>
+    </div>
+  </div>
+</section>
+
+<!-- API section -->
+<section id="api" class="py-32 md:py-48 px-8 md:px-12 max-w-[1400px] mx-auto">
+  <div class="grid md:grid-cols-2 gap-20 items-start">
+    <div class="reveal-left">
+      <p class="text-[11px] font-bold tracking-[0.2em] uppercase text-white/20 mb-6">02 / API</p>
+      <h2 class="text-[clamp(28px,4vw,52px)] font-black tracking-[-0.03em] leading-[1.05] uppercase mb-6">
+        RESTful<br>endpoints.
+      </h2>
+      <p class="text-white/30 leading-relaxed max-w-sm mb-10">
+        Three endpoints covering health monitoring, article classification, and retrieval of recent results.
+      </p>
+      <div class="space-y-0 divide-y divide-white/[0.06]">
+        <div class="flex items-center gap-4 py-4">
+          <span class="text-[10px] font-bold tracking-wider px-2.5 py-1 border border-emerald-500/20 text-emerald-400/60 font-mono">GET</span>
+          <span class="text-sm text-white/40 font-mono">/health</span>
+          <span class="text-[11px] text-white/15 ml-auto">Service status</span>
         </div>
-        <h3 class="text-sm font-semibold mb-2">Article extraction</h3>
-        <p class="text-[13px] leading-relaxed text-zinc-600">Fetches content via Jina Reader with BeautifulSoup fallback. Handles paywalls and JS-rendered pages.</p>
-      </div>
-      <div class="bg-[#09090b] p-8">
-        <div class="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-5 text-zinc-600">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a4 4 0 014 4c0 1.95-2 3-2 8h-4c0-5-2-6.05-2-8a4 4 0 014-4z"/><line x1="10" y1="18" x2="14" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/></svg>
+        <div class="flex items-center gap-4 py-4">
+          <span class="text-[10px] font-bold tracking-wider px-2.5 py-1 border border-indigo-500/20 text-indigo-400/60 font-mono">POST</span>
+          <span class="text-sm text-white/40 font-mono">/classify</span>
+          <span class="text-[11px] text-white/15 ml-auto">Classify article</span>
         </div>
-        <h3 class="text-sm font-semibold mb-2">AI classification</h3>
-        <p class="text-[13px] leading-relaxed text-zinc-600">Claude analyzes content against Performativ's domain — wealth management, compliance, and regulation.</p>
-      </div>
-      <div class="bg-[#09090b] p-8">
-        <div class="w-9 h-9 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-5 text-zinc-600">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <div class="flex items-center gap-4 py-4">
+          <span class="text-[10px] font-bold tracking-wider px-2.5 py-1 border border-emerald-500/20 text-emerald-400/60 font-mono">GET</span>
+          <span class="text-sm text-white/40 font-mono">/latest</span>
+          <span class="text-[11px] text-white/15 ml-auto">Recent results</span>
         </div>
-        <h3 class="text-sm font-semibold mb-2">Structured output</h3>
-        <p class="text-[13px] leading-relaxed text-zinc-600">Returns label, confidence, reasoning, and topics as validated JSON — ready for dashboards or alerts.</p>
       </div>
     </div>
-  </section>
-
-  <!-- API -->
-  <section class="py-16 border-t border-white/[0.06]">
-    <div class="grid md:grid-cols-2 gap-16 items-start">
-      <div>
-        <h2 class="text-2xl font-bold tracking-tight mb-4">RESTful API</h2>
-        <p class="text-sm text-zinc-500 leading-relaxed mb-8">Three endpoints covering health monitoring, classification, and retrieval of recent results.</p>
-        <div class="space-y-0 divide-y divide-white/[0.06]">
-          <div class="flex items-center gap-3 py-3">
-            <span class="text-[11px] font-bold tracking-wide px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono">GET</span>
-            <span class="text-sm text-zinc-400 font-mono">/health</span>
-            <span class="text-xs text-zinc-700 ml-auto">Service status</span>
-          </div>
-          <div class="flex items-center gap-3 py-3">
-            <span class="text-[11px] font-bold tracking-wide px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-mono">POST</span>
-            <span class="text-sm text-zinc-400 font-mono">/classify</span>
-            <span class="text-xs text-zinc-700 ml-auto">Classify article</span>
-          </div>
-          <div class="flex items-center gap-3 py-3">
-            <span class="text-[11px] font-bold tracking-wide px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono">GET</span>
-            <span class="text-sm text-zinc-400 font-mono">/latest</span>
-            <span class="text-xs text-zinc-700 ml-auto">Recent results</span>
-          </div>
+    <div class="reveal-right">
+      <div class="border border-white/[0.06] overflow-hidden">
+        <div class="px-5 py-3 border-b border-white/[0.06] flex items-center gap-2">
+          <span class="text-[10px] font-bold tracking-[0.15em] uppercase text-white/15">Example</span>
         </div>
-      </div>
-      <div class="bg-[#111114] border border-white/[0.06] rounded-xl overflow-hidden">
-        <div class="px-4 py-2.5 border-b border-white/[0.06] text-[11px] font-semibold text-zinc-700 flex items-center gap-2">
-          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          Example request
-        </div>
-        <div class="p-5 overflow-x-auto">
-<pre class="text-xs leading-[1.8] text-zinc-500 font-mono"><span class="text-zinc-700"># Classify a news article</span>
-curl <span class="text-indigo-400">-X</span> POST /classify \
-  <span class="text-indigo-400">-H</span> <span class="text-emerald-400">"Content-Type: application/json"</span> \
-  <span class="text-indigo-400">-d</span> <span class="text-emerald-400">'{"url": "https://finextra.com/..."}'</span>
+        <div class="p-6 overflow-x-auto">
+<pre class="text-xs leading-[2] text-white/30 font-mono"><span class="text-white/10"># Classify a news article</span>
+curl <span class="text-white/50">-X</span> POST /classify \
+  <span class="text-white/50">-H</span> <span class="text-white/20">"Content-Type: application/json"</span> \
+  <span class="text-white/50">-d</span> <span class="text-white/20">'{"url": "https://..."}'</span>
 
-<span class="text-zinc-700"># Response</span>
+<span class="text-white/10"># Response</span>
 {
-  <span class="text-emerald-400">"label"</span>: <span class="text-emerald-400">"GOOD_NEWS"</span>,
-  <span class="text-emerald-400">"confidence"</span>: <span class="text-indigo-400">0.87</span>,
-  <span class="text-emerald-400">"reasoning"</span>: <span class="text-emerald-400">"EU FiDA framework..."</span>,
-  <span class="text-emerald-400">"relevance_topics"</span>: [<span class="text-emerald-400">"regulation"</span>],
-  <span class="text-emerald-400">"processed_at"</span>: <span class="text-emerald-400">"2025-01-..."</span>
+  <span class="text-white/20">"label"</span>: <span class="text-white/20">"GOOD_NEWS"</span>,
+  <span class="text-white/20">"confidence"</span>: <span class="text-white/40">0.87</span>,
+  <span class="text-white/20">"reasoning"</span>: <span class="text-white/20">"..."</span>,
+  <span class="text-white/20">"relevance_topics"</span>: [<span class="text-white/20">"regulation"</span>],
+  <span class="text-white/20">"processed_at"</span>: <span class="text-white/20">"2025-..."</span>
 }</pre>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Tech stack -->
-  <section class="py-16 border-t border-white/[0.06]">
-    <p class="text-[11px] font-bold tracking-[0.15em] uppercase text-zinc-700 mb-6">Built with</p>
-    <div class="flex flex-wrap gap-2">
-      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#3776ab]"></span>Python</span>
-      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#009688]"></span>FastAPI</span>
-      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#d4a574]"></span>Claude AI</span>
-      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#4fc08d]"></span>Jina Reader</span>
-      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#e34f26]"></span>BeautifulSoup</span>
-      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#2496ed]"></span>Docker</span>
-      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#46e3b7]"></span>Render</span>
-      <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-[#f05032]"></span>pytest</span>
+<!-- Divider -->
+<div class="max-w-[1400px] mx-auto px-8 md:px-12 reveal">
+  <div class="h-px bg-white/[0.06]"></div>
+</div>
+
+<!-- History -->
+<section id="history-section" class="py-20 px-8 md:px-12 max-w-[1400px] mx-auto hidden">
+  <p class="text-[11px] font-bold tracking-[0.2em] uppercase text-white/20 mb-8">Recent classifications</p>
+  <div id="history" class="divide-y divide-white/[0.06]"></div>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-white/[0.06]">
+  <div class="max-w-[1400px] mx-auto px-8 md:px-12 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
+    <p class="text-[11px] tracking-[0.15em] uppercase text-white/15">Built for <a href="https://www.performativ.com" target="_blank" class="text-white/30 hover:text-white transition">Performativ</a> &mdash; Case study</p>
+    <div class="flex gap-10">
+      <a href="/docs" class="text-[11px] tracking-[0.15em] uppercase text-white/15 hover:text-white/40 transition">Docs</a>
+      <a href="/health" class="text-[11px] tracking-[0.15em] uppercase text-white/15 hover:text-white/40 transition">Status</a>
+      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank" class="text-[11px] tracking-[0.15em] uppercase text-white/15 hover:text-white/40 transition">Source</a>
     </div>
-  </section>
-
-  <!-- History -->
-  <section id="history-section" class="py-16 border-t border-white/[0.06] hidden">
-    <p class="text-sm font-semibold text-zinc-400 mb-5">Recent classifications</p>
-    <div id="history" class="divide-y divide-white/[0.06]"></div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="py-8 border-t border-white/[0.06] flex flex-col md:flex-row items-center justify-between gap-4">
-    <p class="text-xs text-zinc-700">Built for <a href="https://www.performativ.com" target="_blank" class="text-zinc-500 hover:text-zinc-300 transition font-medium">Performativ</a> &mdash; Case study submission</p>
-    <div class="flex gap-5">
-      <a href="/docs" class="text-xs text-zinc-700 hover:text-zinc-400 transition">API Docs</a>
-      <a href="/health" class="text-xs text-zinc-700 hover:text-zinc-400 transition">Status</a>
-      <a href="https://github.com/JacobBergqvists/news-classifier" target="_blank" class="text-xs text-zinc-700 hover:text-zinc-400 transition">Source</a>
-    </div>
-  </footer>
-
-</main>
+  </div>
+</footer>
 
 <script>
+/* ---- SCROLL REVEAL ---- */
+var revealEls = document.querySelectorAll(".reveal, .reveal-left, .reveal-right, .reveal-scale");
+var revealObs = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) {
+    if (e.isIntersecting) { e.target.classList.add("vis"); }
+  });
+}, { threshold: 0.12 });
+revealEls.forEach(function(el) { revealObs.observe(el); });
+
 /* ---- CLASSIFY ---- */
 document.getElementById("btn").addEventListener("click", classify);
 document.getElementById("url").addEventListener("keydown", function(e) {
@@ -218,7 +352,7 @@ async function classify() {
   if (!url) return;
   var btn = document.getElementById("btn");
   btn.disabled = true;
-  btn.textContent = "Analyzing...";
+  document.getElementById("btn-text").textContent = "Analyzing...";
   document.getElementById("loading").classList.remove("hidden");
   document.getElementById("result").classList.add("hidden");
   document.getElementById("error").classList.add("hidden");
@@ -242,7 +376,7 @@ async function classify() {
     errEl.classList.remove("hidden");
   } finally {
     btn.disabled = false;
-    btn.textContent = "Classify";
+    document.getElementById("btn-text").textContent = "Classify";
     document.getElementById("loading").classList.add("hidden");
   }
 }
@@ -250,19 +384,19 @@ async function classify() {
 function showResult(d) {
   var label = document.getElementById("label");
   label.textContent = d.label.replace("_", " ");
-  label.className = "text-xs font-bold tracking-wide px-3 py-1 rounded-md";
-  if (d.label === "GOOD_NEWS") label.classList.add("bg-emerald-500/10", "text-emerald-400");
-  else if (d.label === "BAD_NEWS") label.classList.add("bg-red-500/10", "text-red-400");
-  else label.classList.add("bg-white/[0.04]", "text-zinc-500");
+  label.className = "text-[11px] font-bold tracking-[0.15em] uppercase px-4 py-1.5";
+  if (d.label === "GOOD_NEWS") label.classList.add("border", "border-emerald-500/30", "text-emerald-400/80");
+  else if (d.label === "BAD_NEWS") label.classList.add("border", "border-red-500/30", "text-red-400/80");
+  else label.classList.add("border", "border-white/10", "text-white/30");
 
-  document.getElementById("conf-num").textContent = Math.round(d.confidence * 100) + "% confidence";
+  document.getElementById("conf-num").textContent = Math.round(d.confidence * 100) + "%";
   document.getElementById("reasoning").textContent = d.reasoning;
 
   var topicsEl = document.getElementById("topics");
   topicsEl.innerHTML = "";
   (d.relevance_topics || []).forEach(function(t) {
     var span = document.createElement("span");
-    span.className = "px-2.5 py-1 border border-white/[0.06] rounded-md text-[11px] font-medium text-zinc-500";
+    span.className = "px-3 py-1 border border-white/[0.06] text-[11px] font-medium text-white/25 tracking-wide uppercase";
     span.textContent = t;
     topicsEl.appendChild(span);
   });
@@ -281,27 +415,27 @@ async function loadHistory() {
     container.innerHTML = "";
     items.forEach(function(d) {
       var div = document.createElement("div");
-      div.className = "flex items-center gap-3 py-3 cursor-pointer hover:opacity-60 transition";
+      div.className = "flex items-center gap-4 py-4 cursor-pointer hover:opacity-50 transition-opacity";
 
       var badge = document.createElement("span");
-      badge.className = "text-[10px] font-bold tracking-wide px-2.5 py-0.5 rounded flex-shrink-0";
-      if (d.label === "GOOD_NEWS") { badge.classList.add("bg-emerald-500/[0.08]", "text-emerald-400"); }
-      else if (d.label === "BAD_NEWS") { badge.classList.add("bg-red-500/[0.08]", "text-red-400"); }
-      else { badge.classList.add("bg-white/[0.03]", "text-zinc-600"); }
+      badge.className = "text-[10px] font-bold tracking-[0.1em] uppercase px-3 py-1 flex-shrink-0";
+      if (d.label === "GOOD_NEWS") badge.classList.add("border", "border-emerald-500/20", "text-emerald-400/60");
+      else if (d.label === "BAD_NEWS") badge.classList.add("border", "border-red-500/20", "text-red-400/60");
+      else badge.classList.add("border", "border-white/[0.06]", "text-white/20");
       badge.textContent = d.label.replace("_", " ");
 
       var urlSpan = document.createElement("span");
-      urlSpan.className = "flex-1 text-xs text-zinc-600 truncate";
+      urlSpan.className = "flex-1 text-xs text-white/15 truncate font-mono";
       urlSpan.textContent = d.url;
 
       var conf = document.createElement("span");
-      conf.className = "text-xs font-semibold text-zinc-700 tabular-nums";
+      conf.className = "text-xs font-bold text-white/10 tabular-nums";
       conf.textContent = Math.round(d.confidence * 100) + "%";
 
       div.appendChild(badge);
       div.appendChild(urlSpan);
       div.appendChild(conf);
-      div.addEventListener("click", function() { showResult(d); window.scrollTo({top:0,behavior:"smooth"}); });
+      div.addEventListener("click", function() { showResult(d); document.getElementById("demo").scrollIntoView({behavior:"smooth"}); });
       container.appendChild(div);
     });
   } catch (e) {}
