@@ -7,7 +7,6 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/89/three.min.js"></script>
 <script>
 tailwind.config = {
   theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } }
@@ -109,11 +108,11 @@ tailwind.config = {
   </div>
 </nav>
 
-<!-- SHADER HERO CANVAS -->
-<canvas id="shaderCanvas" style="position:fixed;top:0;left:0;width:100%;height:100vh;z-index:3;pointer-events:none;opacity:0.18;"></canvas>
-
 <!-- HERO -->
-<section class="min-h-screen flex flex-col items-center justify-center text-center px-6 relative z-10 pt-14">
+<section class="min-h-screen flex flex-col items-center justify-center text-center px-6 relative z-10 pt-14" style="position:relative;">
+  <div id="wavesContainer" style="position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
+    <svg id="wavesSVG" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;opacity:0.35;"></svg>
+  </div>
   <div class="overflow-hidden mb-1">
     <div class="word-inner text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase" id="h1a">News</div>
   </div>
@@ -133,6 +132,7 @@ tailwind.config = {
     <span class="text-[9px] tracking-[0.35em] uppercase text-white/10">Scroll</span>
   </div>
 </section>
+<!-- /HERO -->
 
 <!-- STATEMENT -->
 <section class="py-28 md:py-40 px-6 md:px-10 max-w-6xl mx-auto relative z-10">
@@ -493,62 +493,138 @@ async function loadHistory() {
 }
 
 loadHistory();
+</script>
 
-/* ---- SHADER BACKGROUND ---- */
+<script type="module">
+import { createNoise2D } from 'https://cdn.jsdelivr.net/npm/simplex-noise@4.0.3/+esm';
+
 (function() {
-  var canvas = document.getElementById("shaderCanvas");
-  var camera = new THREE.Camera();
-  camera.position.z = 1;
-  var scene = new THREE.Scene();
-  var geometry = new THREE.PlaneBufferGeometry(2, 2);
-  var uniforms = {
-    time: { type: "f", value: 1.0 },
-    resolution: { type: "v2", value: new THREE.Vector2() }
-  };
-  var material = new THREE.ShaderMaterial({
-    uniforms: uniforms,
-    vertexShader: "void main() { gl_Position = vec4(position, 1.0); }",
-    fragmentShader: [
-      "#define TWO_PI 6.2831853072",
-      "precision highp float;",
-      "uniform vec2 resolution;",
-      "uniform float time;",
-      "float random(in float x) { return fract(sin(x)*1e4); }",
-      "float random(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233)))*43758.5453123); }",
-      "void main(void) {",
-      "  vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);",
-      "  vec2 fMosaicScal = vec2(4.0, 2.0);",
-      "  vec2 vScreenSize = vec2(256.0,256.0);",
-      "  uv.x = floor(uv.x * vScreenSize.x / fMosaicScal.x) / (vScreenSize.x / fMosaicScal.x);",
-      "  uv.y = floor(uv.y * vScreenSize.y / fMosaicScal.y) / (vScreenSize.y / fMosaicScal.y);",
-      "  float t = time*0.06+random(uv.x)*0.4;",
-      "  float lineWidth = 0.0008;",
-      "  vec3 color = vec3(0.0);",
-      "  for(int j=0;j<3;j++) {",
-      "    for(int i=0;i<5;i++) {",
-      "      color[j] += lineWidth*float(i*i) / abs(fract(t - 0.01*float(j)+float(i)*0.01)*1.0 - length(uv));",
-      "    }",
-      "  }",
-      "  gl_FragColor = vec4(color[2],color[1],color[0],1.0);",
-      "}"
-    ].join("\n")
-  });
-  scene.add(new THREE.Mesh(geometry, material));
-  var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-  function resize() {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    uniforms.resolution.value.set(canvas.width, canvas.height);
+  var svg = document.getElementById("wavesSVG");
+  var container = document.getElementById("wavesContainer");
+  if (!svg || !container) return;
+
+  var noise2D = createNoise2D();
+  var paths = [];
+  var lines = [];
+  var bounding = null;
+
+  var mouse = { x: -10, y: 0, lx: 0, ly: 0, sx: 0, sy: 0, v: 0, vs: 0, a: 0, set: false };
+
+  function setSize() {
+    bounding = container.getBoundingClientRect();
+    svg.setAttribute("width", bounding.width);
+    svg.setAttribute("height", bounding.height);
   }
-  resize();
-  window.addEventListener("resize", resize);
-  // Fade in shader
-  gsap.to(canvas, { opacity: 0.18, duration: 2, delay: 0.5, ease: "power2.inOut" });
-  (function animate() {
-    requestAnimationFrame(animate);
-    uniforms.time.value += 0.05;
-    renderer.render(scene, camera);
-  })();
+
+  function setLines() {
+    // Remove old paths
+    paths.forEach(function(p) { p.remove(); });
+    paths = []; lines = [];
+
+    var w = bounding.width, h = bounding.height;
+    var xGap = 10, yGap = 10;
+    var oW = w + 200, oH = h + 30;
+    var totalLines = Math.ceil(oW / xGap);
+    var totalPoints = Math.ceil(oH / yGap);
+    var xStart = (w - xGap * totalLines) / 2;
+    var yStart = (h - yGap * totalPoints) / 2;
+
+    for (var i = 0; i < totalLines; i++) {
+      var pts = [];
+      for (var j = 0; j < totalPoints; j++) {
+        pts.push({
+          x: xStart + xGap * i, y: yStart + yGap * j,
+          wave: { x: 0, y: 0 },
+          cursor: { x: 0, y: 0, vx: 0, vy: 0 }
+        });
+      }
+      var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", "#ffffff");
+      path.setAttribute("stroke-width", "1");
+      svg.appendChild(path);
+      paths.push(path);
+      lines.push(pts);
+    }
+  }
+
+  function moved(p, withCursor) {
+    return {
+      x: p.x + p.wave.x + (withCursor !== false ? p.cursor.x : 0),
+      y: p.y + p.wave.y + (withCursor !== false ? p.cursor.y : 0)
+    };
+  }
+
+  function movePoints(time) {
+    lines.forEach(function(pts) {
+      pts.forEach(function(p) {
+        var m = noise2D((p.x + time * 0.008) * 0.003, (p.y + time * 0.003) * 0.002) * 8;
+        p.wave.x = Math.cos(m) * 12;
+        p.wave.y = Math.sin(m) * 6;
+
+        var dx = p.x - mouse.sx, dy = p.y - mouse.sy;
+        var d = Math.hypot(dx, dy);
+        var l = Math.max(175, mouse.vs);
+        if (d < l) {
+          var s = 1 - d / l;
+          var f = Math.cos(d * 0.001) * s;
+          p.cursor.vx += Math.cos(mouse.a) * f * l * mouse.vs * 0.00035;
+          p.cursor.vy += Math.sin(mouse.a) * f * l * mouse.vs * 0.00035;
+        }
+        p.cursor.vx += (0 - p.cursor.x) * 0.01;
+        p.cursor.vy += (0 - p.cursor.y) * 0.01;
+        p.cursor.vx *= 0.95; p.cursor.vy *= 0.95;
+        p.cursor.x += p.cursor.vx; p.cursor.y += p.cursor.vy;
+        p.cursor.x = Math.min(50, Math.max(-50, p.cursor.x));
+        p.cursor.y = Math.min(50, Math.max(-50, p.cursor.y));
+      });
+    });
+  }
+
+  function drawLines() {
+    lines.forEach(function(pts, i) {
+      if (pts.length < 2 || !paths[i]) return;
+      var first = moved(pts[0], false);
+      var d = "M " + first.x + " " + first.y;
+      for (var j = 1; j < pts.length; j++) {
+        var c = moved(pts[j]);
+        d += " L " + c.x + " " + c.y;
+      }
+      paths[i].setAttribute("d", d);
+    });
+  }
+
+  function tick(time) {
+    mouse.sx += (mouse.x - mouse.sx) * 0.1;
+    mouse.sy += (mouse.y - mouse.sy) * 0.1;
+    var dx = mouse.x - mouse.lx, dy = mouse.y - mouse.ly;
+    mouse.v = Math.hypot(dx, dy);
+    mouse.vs += (mouse.v - mouse.vs) * 0.1;
+    mouse.vs = Math.min(100, mouse.vs);
+    mouse.lx = mouse.x; mouse.ly = mouse.y;
+    mouse.a = Math.atan2(dy, dx);
+    movePoints(time);
+    drawLines();
+    requestAnimationFrame(tick);
+  }
+
+  window.addEventListener("mousemove", function(e) {
+    if (!bounding) return;
+    mouse.x = e.clientX - bounding.left;
+    mouse.y = e.clientY - bounding.top + window.scrollY;
+    if (!mouse.set) { mouse.sx = mouse.x; mouse.sy = mouse.y; mouse.lx = mouse.x; mouse.ly = mouse.y; mouse.set = true; }
+  });
+
+  window.addEventListener("resize", function() { setSize(); setLines(); });
+
+  setSize();
+  setLines();
+
+  // Fade in
+  gsap.to(svg, { opacity: 0.35, duration: 2, delay: 0.5, ease: "power2.inOut" });
+  svg.style.opacity = "0";
+
+  requestAnimationFrame(tick);
 })();
 </script>
 </body>
