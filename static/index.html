@@ -180,9 +180,38 @@ tailwind.config = {
             <span id="label" class="text-[10px] font-bold tracking-[0.12em] uppercase px-3 py-1.5"></span>
             <span id="conf-num" class="text-sm font-bold text-white/20 tabular-nums"></span>
           </div>
+          <!-- Confidence meter -->
+          <div class="mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[9px] tracking-wider uppercase text-white/15">Confidence</span>
+              <span id="conf-label" class="text-[9px] tracking-wider uppercase text-white/15"></span>
+            </div>
+            <div class="w-full h-1 bg-white/[0.05] border border-white/[0.07] overflow-hidden">
+              <div id="conf-bar" class="h-full bg-gradient-to-r from-red-500/60 via-yellow-500/60 to-emerald-500/60 transition-all duration-500" style="width:50%"></div>
+            </div>
+          </div>
           <p id="reasoning" class="text-xs leading-[1.9] text-white/30 mb-4 pl-3 border-l border-white/[0.07]"></p>
           <div id="topics" class="flex flex-wrap gap-1.5 mb-3"></div>
           <p id="meta" class="text-[10px] text-white/10 uppercase tracking-wider"></p>
+        </div>
+
+        <!-- Confidence guide (when no result) -->
+        <div id="confGuide" class="text-[11px] leading-relaxed text-white/20 space-y-2">
+          <p class="font-bold text-white/30">How confidence scoring works:</p>
+          <div class="space-y-1.5 pl-2 border-l border-white/[0.05]">
+            <div class="flex items-center justify-between">
+              <span>0.90–0.99</span> <span class="text-white/10">Direct mention of Performativ or core products</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>0.75–0.89</span> <span class="text-white/10">Clearly relevant theme (wealth tech, regulation)</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>0.55–0.74</span> <span class="text-white/10">Tangentially related (fintech, but not wealth mgmt)</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>0.30–0.54</span> <span class="text-white/10">Weak connection (broad industry news)</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -420,6 +449,7 @@ async function classify() {
   document.getElementById("btn-text").textContent = "Analyzing...";
   document.getElementById("loading").classList.remove("hidden");
   document.getElementById("result").classList.add("hidden");
+  document.getElementById("confGuide").classList.add("hidden");
   document.getElementById("error").classList.add("hidden");
   try {
     var res = await fetch("/classify", {
@@ -447,7 +477,19 @@ function showResult(d) {
   if (d.label === "GOOD_NEWS") label.classList.add("border","border-emerald-500/25","text-emerald-400/80");
   else if (d.label === "BAD_NEWS") label.classList.add("border","border-red-500/25","text-red-400/80");
   else label.classList.add("border","border-white/10","text-white/30");
-  document.getElementById("conf-num").textContent = Math.round(d.confidence * 100) + "%";
+
+  var confPercent = Math.round(d.confidence * 100);
+  document.getElementById("conf-num").textContent = confPercent + "%";
+
+  // Update confidence meter
+  var confBar = document.getElementById("conf-bar");
+  confBar.style.width = confPercent + "%";
+  var confLabel = document.getElementById("conf-label");
+  if (d.confidence >= 0.90) confLabel.textContent = "Very High";
+  else if (d.confidence >= 0.75) confLabel.textContent = "High";
+  else if (d.confidence >= 0.55) confLabel.textContent = "Medium";
+  else confLabel.textContent = "Low";
+
   document.getElementById("reasoning").textContent = d.reasoning;
   var t = document.getElementById("topics");
   t.innerHTML = "";
@@ -458,6 +500,7 @@ function showResult(d) {
     t.appendChild(s);
   });
   document.getElementById("meta").textContent = "Processed " + new Date(d.processed_at).toLocaleString();
+  document.getElementById("confGuide").classList.add("hidden");
   document.getElementById("result").classList.remove("hidden");
   gsap.from("#result", { opacity:0, y:16, duration:0.5, ease:"power3.out" });
 }
