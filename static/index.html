@@ -125,9 +125,9 @@ tailwind.config = {
         </filter>
       </defs>
     </svg>
-    <div id="gooeyMorph" class="word-inner relative" style="filter: url(#gooeyThreshold); height: clamp(56px,10vw,140px); display: flex; align-items: center; justify-content: center;">
-      <span id="gooeyText1" class="text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white/30" style="position:absolute;">Classifier</span>
-      <span id="gooeyText2" class="text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white/30" style="position:absolute;opacity:0;">Analyzer</span>
+    <div id="gooeyMorph" class="word-inner relative" style="filter: url(#gooeyThreshold); height: clamp(56px,10vw,140px); display: flex; align-items: center; justify-content: center; opacity: 0;">
+      <span id="gooeyText1" class="text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white" style="position:absolute;">Classifier</span>
+      <span id="gooeyText2" class="text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white" style="position:absolute;opacity:0;">Analyzer</span>
     </div>
   </div>
   <p class="reveal text-white/30 text-base md:text-lg max-w-sm leading-relaxed mb-10" id="hero-sub">
@@ -365,9 +365,11 @@ curl <span class="text-white/35">-X</span> POST /classify \
 gsap.registerPlugin(ScrollTrigger);
 
 /* ---- HERO ENTRANCE ---- */
-gsap.to(["#h1a","#gooeyMorph"], {
-  translateY: 0, opacity: 1, duration: 1.1, stagger: 0.12, ease: "power4.out",
-  delay: 0.2
+gsap.to("#h1a", {
+  translateY: 0, opacity: 1, duration: 1.1, ease: "power4.out", delay: 0.2
+});
+gsap.to("#gooeyMorph", {
+  translateY: 0, opacity: 0.3, duration: 1.1, ease: "power4.out", delay: 0.32
 });
 gsap.to("#hero-sub", { opacity: 1, y: 0, duration: 0.9, delay: 0.8, ease: "power3.out" });
 gsap.to("#hero-cta", { opacity: 1, y: 0, duration: 0.9, delay: 1.0, ease: "power3.out" });
