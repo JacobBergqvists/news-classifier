@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# Node
+frontend/node_modules
+frontend/.next
+frontend/.npm
+
+# Python
+__pycache__
+*.pyc
+.pytest_cache
+.venv
+venv
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+.env.local
+
+# Misc
+.gitattributes
+README.md
+CLAUDE.md

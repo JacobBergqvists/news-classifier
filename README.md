@@ -75,6 +75,8 @@ The service handles common failure modes:
 
 ## Running locally
 
+### Backend only (FastAPI)
+
 ```bash
 # Clone and install
 git clone https://github.com/JacobBergqvists/news-classifier.git
@@ -91,10 +93,38 @@ python -m uvicorn main:app --reload
 python -m pytest test_main.py -v
 ```
 
+### With React frontend (full stack)
+
+```bash
+# Terminal 1: Backend
+pip install -r requirements.txt
+echo 'ANTHROPIC_API_KEY=your-key-here' > .env
+python -m uvicorn main:app --reload
+
+# Terminal 2: Frontend
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend will be available at `http://localhost:3000`.
+
 ## Tech stack
 
+**Backend:**
 - **Python 3.9+** with FastAPI
 - **Claude Sonnet** (Anthropic API) for classification
 - **Jina Reader** for article extraction
 - **BeautifulSoup** as fallback parser
-- **Deployed on Render** (Docker)
+- **AsyncAnthropic + httpx** for concurrent I/O
+- **Pydantic** for validation and settings management
+
+**Frontend:**
+- **Next.js 16** with TypeScript
+- **Tailwind CSS** for styling
+- **shadcn/ui** for component library
+- **Three.js** for shader animations
+
+**Deployment:**
+- **Docker** with multi-stage build (Node + Python)
+- **Render** for hosting

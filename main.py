@@ -56,6 +56,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Serve frontend static files if available
+from fastapi.staticfiles import StaticFiles
+
+frontend_build = Path(__file__).parent / "frontend" / ".next" / "static"
+if frontend_build.exists():
+    app.mount("/static", StaticFiles(directory=str(frontend_build)), name="frontend-static")
+
 claude = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 http_client = httpx.AsyncClient(follow_redirects=True)
 
