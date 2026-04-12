@@ -3,20 +3,21 @@
 Run with: python -m pytest test_main.py -v
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app, classify_with_claude, fetch_article_text, latest_results, rate_limit_store
+from main import app, latest_results, rate_limit_store, settings
 
 client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
-def clear_rate_limits():
-    """Reset rate limiting between tests."""
+def clear_state():
+    """Reset shared state between tests."""
     rate_limit_store.clear()
+    latest_results.clear()
     yield
 
 
@@ -34,6 +35,17 @@ def test_homepage_returns_html():
     assert response.status_code == 200
     assert "News Classifier" in response.text
     assert "text/html" in response.headers["content-type"]
+
+
+# --- CORS ---
+
+
+def test_cors_headers_present():
+    response = client.options(
+        "/classify",
+        headers={"Origin": "http://localhost:3000", "Access-Control-Request-Method": "POST"},
+    )
+    assert "access-control-allow-origin" in response.headers
 
 
 # --- Input validation ---
@@ -54,11 +66,39 @@ def test_classify_rejects_empty_url():
     assert response.status_code == 422
 
 
+def test_classify_rejects_ftp_url():
+    response = client.post("/classify", json={"url": "ftp://example.com/file"})
+    assert response.status_code == 422
+
+
+# --- Rate limiting ---
+
+
+@patch("main.classify_with_claude", new_callable=AsyncMock)
+@patch("main.fetch_article_text", new_callable=AsyncMock)
+def test_rate_limiting_blocks_after_limit(mock_fetch, mock_classify):
+    mock_fetch.return_value = "Some article text."
+    mock_classify.return_value = {
+        "label": "UNRELATED",
+        "confidence": 0.91,
+        "reasoning": "Test.",
+        "relevance_topics": [],
+    }
+
+    for i in range(settings.rate_limit):
+        resp = client.post("/classify", json={"url": f"https://example.com/{i}"})
+        assert resp.status_code == 200
+
+    resp = client.post("/classify", json={"url": "https://example.com/blocked"})
+    assert resp.status_code == 429
+    assert "Rate limit" in resp.json()["detail"]
+
+
 # --- Classification with mocked dependencies ---
 
 
-@patch("main.classify_with_claude")
-@patch("main.fetch_article_text")
+@patch("main.classify_with_claude", new_callable=AsyncMock)
+@patch("main.fetch_article_text", new_callable=AsyncMock)
 def test_classify_good_news(mock_fetch, mock_classify):
     mock_fetch.return_value = "Vanguard launches AI tool for wealth management portfolios."
     mock_classify.return_value = {
@@ -79,8 +119,8 @@ def test_classify_good_news(mock_fetch, mock_classify):
     assert len(data["relevance_topics"]) > 0
 
 
-@patch("main.classify_with_claude")
-@patch("main.fetch_article_text")
+@patch("main.classify_with_claude", new_callable=AsyncMock)
+@patch("main.fetch_article_text", new_callable=AsyncMock)
 def test_classify_unrelated(mock_fetch, mock_classify):
     mock_fetch.return_value = "Taylor Swift announces new world tour dates for 2026."
     mock_classify.return_value = {
@@ -95,10 +135,30 @@ def test_classify_unrelated(mock_fetch, mock_classify):
     assert response.json()["label"] == "UNRELATED"
 
 
-@patch("main.classify_with_claude")
-@patch("main.fetch_article_text")
+@patch("main.classify_with_claude", new_callable=AsyncMock)
+@patch("main.fetch_article_text", new_callable=AsyncMock)
+def test_classify_bad_news(mock_fetch, mock_classify):
+    mock_fetch.return_value = "EU introduces strict regulations on wealth management AI tools."
+    mock_classify.return_value = {
+        "label": "BAD_NEWS",
+        "confidence": 0.78,
+        "reasoning": "New regulation could increase compliance burden for wealth tech platforms.",
+        "relevance_topics": ["regulation", "compliance"],
+    }
+
+    response = client.post("/classify", json={"url": "https://example.com/regulation"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["label"] == "BAD_NEWS"
+    assert 0 < data["confidence"] < 1
+
+
+# --- Latest endpoint ---
+
+
+@patch("main.classify_with_claude", new_callable=AsyncMock)
+@patch("main.fetch_article_text", new_callable=AsyncMock)
 def test_latest_returns_recent_results(mock_fetch, mock_classify):
-    latest_results.clear()
     mock_fetch.return_value = "Some article text."
     mock_classify.return_value = {
         "label": "BAD_NEWS",
@@ -107,7 +167,6 @@ def test_latest_returns_recent_results(mock_fetch, mock_classify):
         "relevance_topics": ["regulation"],
     }
 
-    # Classify two articles
     client.post("/classify", json={"url": "https://example.com/a"})
     client.post("/classify", json={"url": "https://example.com/b"})
 
@@ -115,12 +174,10 @@ def test_latest_returns_recent_results(mock_fetch, mock_classify):
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
-    # Most recent first
     assert data[0]["url"] == "https://example.com/b"
 
 
 def test_latest_empty():
-    latest_results.clear()
     response = client.get("/latest")
     assert response.status_code == 200
     assert response.json() == []

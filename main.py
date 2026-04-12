@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import re
 import time
 from datetime import datetime, timezone
@@ -10,17 +9,33 @@ from urllib.parse import urlparse
 import anthropic
 import httpx
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, field_validator
+from pydantic_settings import BaseSettings
 
-load_dotenv()
+# --- Configuration ---
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
+
+    anthropic_api_key: str
+    cors_origins: list[str] = ["*"]
+    rate_limit: int = 10
+    rate_window: int = 60  # seconds
+    log_level: str = "INFO"
+
+    model_config = {"env_file": ".env"}
+
+
+settings = Settings()
 
 # --- Logging ---
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=settings.log_level,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 logger = logging.getLogger("news-classifier")
@@ -32,16 +47,24 @@ app = FastAPI(
     description="AI-powered news relevance classifier for Performativ",
     version="1.0.0",
 )
-client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+claude = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+http_client = httpx.AsyncClient(follow_redirects=True)
 
 # In-memory store for recent classifications (resets on restart).
 # A production system would use a database, but this is sufficient for a demo.
 latest_results: list[dict] = []
 
-# Simple rate limiting: max 10 requests per minute per IP
+# Simple rate limiting: max N requests per minute per IP
 rate_limit_store: dict[str, list[float]] = {}
-RATE_LIMIT = 10
-RATE_WINDOW = 60  # seconds
 
 # --- Classification prompt ---
 
@@ -82,7 +105,7 @@ VALID_LABELS = {"GOOD_NEWS", "BAD_NEWS", "UNRELATED"}
 # --- Core logic ---
 
 
-def fetch_article_text(url: str) -> str:
+async def fetch_article_text(url: str) -> str:
     """Fetch article content via Jina Reader, which handles paywalls and JS-rendered pages.
 
     Falls back to direct HTTP fetch with BeautifulSoup if Jina fails, so we
@@ -92,7 +115,7 @@ def fetch_article_text(url: str) -> str:
     try:
         jina_url = f"https://r.jina.ai/{url}"
         headers = {"Accept": "text/plain"}
-        response = httpx.get(jina_url, headers=headers, timeout=20, follow_redirects=True)
+        response = await http_client.get(jina_url, headers=headers, timeout=20)
         response.raise_for_status()
         text = response.text.strip()
         if len(text) > 200:
@@ -108,7 +131,7 @@ def fetch_article_text(url: str) -> str:
     # Fallback: direct HTTP fetch + BeautifulSoup
     try:
         headers = {"User-Agent": "Mozilla/5.0 (compatible; NewsClassifier/1.0)"}
-        response = httpx.get(url, headers=headers, timeout=15, follow_redirects=True)
+        response = await http_client.get(url, headers=headers, timeout=15)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -134,12 +157,12 @@ def fetch_article_text(url: str) -> str:
     )
 
 
-def classify_with_claude(url: str, article_text: str) -> dict:
+async def classify_with_claude(url: str, article_text: str) -> dict:
     """Send article text to Claude for classification. Returns a validated result dict."""
     user_message = f"Classify this article.\n\nURL: {url}\n\nArticle content:\n{article_text}"
 
     try:
-        message = client.messages.create(
+        message = await claude.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=512,
             system=SYSTEM_PROMPT,
@@ -194,12 +217,13 @@ class ClassifyRequest(BaseModel):
             raise ValueError("URL must contain a valid domain")
         return v
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "url": "https://www.finextra.com/newsarticle/43498/eu-reaches-agreement-on-fida-open-finance-framework"
-            }
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"url": "https://www.finextra.com/newsarticle/43498/eu-reaches-agreement-on-fida-open-finance-framework"}
+            ]
         }
+    }
 
 
 class ClassifyResponse(BaseModel):
@@ -215,20 +239,20 @@ class ClassifyResponse(BaseModel):
 
 
 @app.get("/", response_class=HTMLResponse)
-def homepage():
+async def homepage():
     """Serve the web UI."""
     html_path = Path(__file__).parent / "static" / "index.html"
     return html_path.read_text(encoding="utf-8")
 
 
 @app.get("/health")
-def health():
+async def health():
     """Health check endpoint for monitoring and uptime checks."""
     return {"status": "ok"}
 
 
 @app.post("/classify", response_model=ClassifyResponse)
-def classify(request: ClassifyRequest, req: Request):
+async def classify(request: ClassifyRequest, req: Request):
     """Classify a news article by its relevance to Performativ's business.
 
     Fetches the article content, sends it to Claude for analysis, and returns
@@ -238,8 +262,8 @@ def classify(request: ClassifyRequest, req: Request):
     client_ip = req.client.host if req.client else "unknown"
     now = time.time()
     timestamps = rate_limit_store.get(client_ip, [])
-    timestamps = [t for t in timestamps if now - t < RATE_WINDOW]
-    if len(timestamps) >= RATE_LIMIT:
+    timestamps = [t for t in timestamps if now - t < settings.rate_window]
+    if len(timestamps) >= settings.rate_limit:
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Max 10 requests per minute.")
     timestamps.append(now)
     rate_limit_store[client_ip] = timestamps
@@ -247,8 +271,8 @@ def classify(request: ClassifyRequest, req: Request):
     url = request.url
     logger.info("Classifying: %s", url)
 
-    article_text = fetch_article_text(url)
-    classification = classify_with_claude(url, article_text)
+    article_text = await fetch_article_text(url)
+    classification = await classify_with_claude(url, article_text)
 
     result = {
         "url": url,
@@ -269,6 +293,6 @@ def classify(request: ClassifyRequest, req: Request):
 
 
 @app.get("/latest")
-def latest(limit: int = 10):
+async def latest(limit: int = 10):
     """Return the most recent classifications. Useful for dashboards or Slack integrations."""
     return latest_results[:limit]
