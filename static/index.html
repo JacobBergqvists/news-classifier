@@ -125,11 +125,7 @@ tailwind.config = {
         </filter>
       </defs>
     </svg>
-    <div class="relative" style="filter: url(#gooeyThreshold);">
-      <span class="word-inner text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white/[0.08] absolute" id="gooeyText1">Classifier</span>
-      <span class="word-inner text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white/[0.08] absolute opacity-0" id="gooeyText2">Analyzer</span>
-      <div class="text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white/[0.08] opacity-0">Classifier</div>
-    </div>
+    <div class="word-inner text-[clamp(56px,10vw,140px)] font-black tracking-[-0.04em] leading-[0.9] uppercase text-white/[0.08]" id="gooeyMorph" style="filter: url(#gooeyThreshold);">Classifier</div>
   </div>
   <p class="reveal text-white/30 text-base md:text-lg max-w-sm leading-relaxed mb-10" id="hero-sub">
     AI-powered relevance classification<br>for Performativ's wealth management business.
@@ -549,36 +545,16 @@ async function loadHistory() {
 
 /* ---- GOOEY TEXT MORPHING ---- */
 (function() {
-  var text1 = document.getElementById("gooeyText1");
-  var text2 = document.getElementById("gooeyText2");
-  if (!text1 || !text2) return;
+  var textEl = document.getElementById("gooeyMorph");
+  if (!textEl) return;
 
   var texts = ["Classifier", "Analyzer", "Inspector", "Evaluator"];
-  var textIndex = texts.length - 1;
+  var textIndex = 0;
   var time = new Date();
   var morph = 0;
   var cooldown = 0.25;
   var morphTime = 1;
   var cooldownTime = 0.25;
-
-  var setMorph = function(fraction) {
-    var blur = Math.min(8 / fraction - 8, 100);
-    text2.style.filter = "blur(" + blur + "px)";
-    text2.style.opacity = Math.pow(fraction, 0.4) * 100 + "%";
-
-    fraction = 1 - fraction;
-    blur = Math.min(8 / fraction - 8, 100);
-    text1.style.filter = "blur(" + blur + "px)";
-    text1.style.opacity = Math.pow(fraction, 0.4) * 100 + "%";
-  };
-
-  var doCooldown = function() {
-    morph = 0;
-    text2.style.filter = "";
-    text2.style.opacity = "100%";
-    text1.style.filter = "";
-    text1.style.opacity = "0%";
-  };
 
   var doMorph = function() {
     morph -= cooldown;
@@ -588,9 +564,12 @@ async function loadHistory() {
     if (fraction > 1) {
       cooldown = cooldownTime;
       fraction = 1;
+      textEl.style.filter = "";
+      textEl.style.textShadow = "";
+    } else {
+      var blur = Math.min(8 / (fraction || 0.01) - 8, 100);
+      textEl.style.filter = "blur(" + blur + "px)";
     }
-
-    setMorph(fraction);
   };
 
   var animate = function() {
@@ -605,12 +584,11 @@ async function loadHistory() {
     if (cooldown <= 0) {
       if (shouldIncrementIndex) {
         textIndex = (textIndex + 1) % texts.length;
-        text1.textContent = texts[textIndex % texts.length];
-        text2.textContent = texts[(textIndex + 1) % texts.length];
+        textEl.textContent = texts[textIndex];
       }
       doMorph();
     } else {
-      doCooldown();
+      morph += dt;
     }
   };
 
