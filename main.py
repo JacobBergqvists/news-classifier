@@ -107,23 +107,21 @@ Respond ONLY with a JSON object in this exact format (no markdown, no extra text
   "relevance_topics": ["topic1", "topic2"]
 }"""
 
-VALID_LABELS = {"POSITIVE", "NEGATIVE", "NEUTRAL", "UNRELATED"}
+VALID_LABELS = {"GOOD_NEWS", "BAD_NEWS", "UNRELATED"}
 
 
 def derive_label(relevance: float, sentiment: float) -> str:
     """Derive a classification label from relevance and sentiment scores.
 
-    This keeps the label deterministic and consistent — Claude only provides
-    the two numeric scores, and the label is a pure function of those scores.
+    Uses the three labels specified by the case: GOOD_NEWS, BAD_NEWS, UNRELATED.
+    Claude only provides numeric scores — the label is a pure function of those.
     """
     if relevance < 0.3:
         return "UNRELATED"
-    elif sentiment > 0.3:
-        return "POSITIVE"
-    elif sentiment < -0.3:
-        return "NEGATIVE"
+    elif sentiment >= 0:
+        return "GOOD_NEWS"
     else:
-        return "NEUTRAL"
+        return "BAD_NEWS"
 
 # Common error page patterns that indicate we didn't get real content
 ERROR_PAGE_PATTERNS = [
@@ -279,6 +277,7 @@ class ClassifyRequest(BaseModel):
 class ClassifyResponse(BaseModel):
     url: str
     label: str
+    confidence: float
     relevance: float
     sentiment: float
     reasoning: str
@@ -328,9 +327,18 @@ async def classify(request: ClassifyRequest, req: Request):
     relevance = classification["relevance"]
     sentiment = classification["sentiment"]
 
+    # Confidence is derived: high relevance + strong sentiment = high confidence.
+    # For UNRELATED articles, confidence reflects how sure we are it's irrelevant.
+    if relevance < 0.3:
+        confidence = round(1.0 - relevance, 2)  # Low relevance → high confidence it's unrelated
+    else:
+        confidence = round((relevance + abs(sentiment)) / 2, 2)  # Avg of relevance strength and sentiment strength
+    confidence = min(confidence, 0.99)
+
     result = {
         "url": url,
         "label": derive_label(relevance, sentiment),
+        "confidence": confidence,
         "relevance": relevance,
         "sentiment": sentiment,
         "reasoning": classification["reasoning"],
@@ -343,7 +351,7 @@ async def classify(request: ClassifyRequest, req: Request):
     if len(latest_results) > 20:
         latest_results.pop()
 
-    logger.info("Result: %s (relevance: %.2f, sentiment: %.2f)", result["label"], result["relevance"], result["sentiment"])
+    logger.info("Result: %s (confidence: %.2f, relevance: %.2f, sentiment: %.2f)", result["label"], result["confidence"], result["relevance"], result["sentiment"])
     return result
 
 

@@ -56,11 +56,10 @@
 
 News relevance classifier for Performativ (wealth management SaaS).
 
-**Four labels** (extended from the original three — NEUTRAL added because testing revealed that relevant articles with mixed/neutral sentiment were being forced into incorrect GOOD/BAD categories):
-- POSITIVE: Relevant + positive sentiment
-- NEGATIVE: Relevant + negative sentiment
-- NEUTRAL: Relevant but mixed/neutral sentiment
-- UNRELATED: Not relevant
+**Three labels** (as specified by case, derived deterministically from relevance + sentiment scores):
+- GOOD_NEWS: Relevant + positive/neutral sentiment (sentiment >= 0)
+- BAD_NEWS: Relevant + negative sentiment (sentiment < 0)
+- UNRELATED: Not relevant (relevance < 0.3)
 
 **Three endpoints:**
 - GET /health

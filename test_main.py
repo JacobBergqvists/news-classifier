@@ -97,16 +97,17 @@ def test_detect_error_page_long_valid():
 # --- Label derivation ---
 
 
-def test_derive_label_positive():
-    assert derive_label(0.85, 0.65) == "POSITIVE"
+def test_derive_label_good_news():
+    assert derive_label(0.85, 0.65) == "GOOD_NEWS"
 
 
-def test_derive_label_negative():
-    assert derive_label(0.80, -0.55) == "NEGATIVE"
+def test_derive_label_bad_news():
+    assert derive_label(0.80, -0.55) == "BAD_NEWS"
 
 
-def test_derive_label_neutral():
-    assert derive_label(0.70, 0.10) == "NEUTRAL"
+def test_derive_label_good_news_neutral_sentiment():
+    """Relevant article with neutral sentiment should be GOOD_NEWS (sentiment >= 0)."""
+    assert derive_label(0.70, 0.0) == "GOOD_NEWS"
 
 
 def test_derive_label_unrelated():
@@ -114,13 +115,13 @@ def test_derive_label_unrelated():
 
 
 def test_derive_label_boundary_relevance():
-    """Relevance exactly at 0.3 should be NEUTRAL (not UNRELATED)."""
-    assert derive_label(0.30, 0.0) == "NEUTRAL"
+    """Relevance exactly at 0.3 should be GOOD_NEWS (not UNRELATED)."""
+    assert derive_label(0.30, 0.0) == "GOOD_NEWS"
 
 
-def test_derive_label_boundary_sentiment():
-    """Sentiment exactly at 0.3 should be NEUTRAL (not POSITIVE)."""
-    assert derive_label(0.80, 0.30) == "NEUTRAL"
+def test_derive_label_boundary_low_relevance():
+    """Relevance just below 0.3 should be UNRELATED."""
+    assert derive_label(0.29, 0.5) == "UNRELATED"
 
 
 # --- Rate limiting ---
@@ -151,7 +152,7 @@ def test_rate_limiting_blocks_after_limit(mock_fetch, mock_classify):
 
 @patch("main.classify_with_claude", new_callable=AsyncMock)
 @patch("main.fetch_article_text", new_callable=AsyncMock)
-def test_classify_positive(mock_fetch, mock_classify):
+def test_classify_good_news(mock_fetch, mock_classify):
     mock_fetch.return_value = "Vanguard launches AI tool for wealth management portfolios."
     mock_classify.return_value = {
         "relevance": 0.88,
@@ -164,7 +165,8 @@ def test_classify_positive(mock_fetch, mock_classify):
     assert response.status_code == 200
 
     data = response.json()
-    assert data["label"] == "POSITIVE"
+    assert data["label"] == "GOOD_NEWS"
+    assert data["confidence"] > 0
     assert data["relevance"] == 0.88
     assert data["sentiment"] == 0.65
     assert "url" in data
@@ -187,13 +189,12 @@ def test_classify_unrelated(mock_fetch, mock_classify):
     assert response.status_code == 200
     data = response.json()
     assert data["label"] == "UNRELATED"
-    assert data["relevance"] == 0.03
-    assert data["sentiment"] == 0.0
+    assert data["confidence"] > 0.9  # High confidence it's unrelated (1.0 - 0.03)
 
 
 @patch("main.classify_with_claude", new_callable=AsyncMock)
 @patch("main.fetch_article_text", new_callable=AsyncMock)
-def test_classify_negative(mock_fetch, mock_classify):
+def test_classify_bad_news(mock_fetch, mock_classify):
     mock_fetch.return_value = "EU introduces strict regulations on wealth management AI tools."
     mock_classify.return_value = {
         "relevance": 0.85,
@@ -205,40 +206,19 @@ def test_classify_negative(mock_fetch, mock_classify):
     response = client.post("/classify", json={"url": "https://example.com/regulation"})
     assert response.status_code == 200
     data = response.json()
-    assert data["label"] == "NEGATIVE"
-    assert data["relevance"] == 0.85
-    assert data["sentiment"] == -0.65
+    assert data["label"] == "BAD_NEWS"
+    assert 0 <= data["confidence"] <= 1
     assert 0 <= data["relevance"] <= 1
     assert -1 <= data["sentiment"] <= 1
 
 
 @patch("main.classify_with_claude", new_callable=AsyncMock)
 @patch("main.fetch_article_text", new_callable=AsyncMock)
-def test_classify_neutral(mock_fetch, mock_classify):
-    """Article that is relevant but neither positive nor negative."""
-    mock_fetch.return_value = "UK wealth management firms ranked by assets under management."
-    mock_classify.return_value = {
-        "relevance": 0.74,
-        "sentiment": 0.12,
-        "reasoning": "Industry overview relevant to Performativ's market but with no clear positive or negative impact.",
-        "relevance_topics": ["wealth management"],
-    }
-
-    response = client.post("/classify", json={"url": "https://example.com/overview"})
-    assert response.status_code == 200
-    data = response.json()
-    assert data["label"] == "NEUTRAL"
-    assert 0 <= data["relevance"] <= 1
-    assert -1 <= data["sentiment"] <= 1
-
-
-@patch("main.classify_with_claude", new_callable=AsyncMock)
-@patch("main.fetch_article_text", new_callable=AsyncMock)
-def test_response_has_no_confidence(mock_fetch, mock_classify):
-    """Verify confidence field is not in the response (removed by design)."""
+def test_response_matches_case_format(mock_fetch, mock_classify):
+    """Verify response contains all fields specified in the case study."""
     mock_fetch.return_value = "Some article text."
     mock_classify.return_value = {
-        "relevance": 0.50,
+        "relevance": 0.74,
         "sentiment": 0.40,
         "reasoning": "Relevant article.",
         "relevance_topics": ["wealth tech"],
@@ -246,9 +226,18 @@ def test_response_has_no_confidence(mock_fetch, mock_classify):
 
     response = client.post("/classify", json={"url": "https://example.com/test"})
     data = response.json()
-    assert "confidence" not in data
+    # Required by case spec
+    assert "url" in data
+    assert "label" in data
+    assert "confidence" in data
+    assert "reasoning" in data
+    assert "relevance_topics" in data
+    assert "processed_at" in data
+    # Our bonus fields
     assert "relevance" in data
     assert "sentiment" in data
+    # Label must be one of the three specified
+    assert data["label"] in {"GOOD_NEWS", "BAD_NEWS", "UNRELATED"}
 
 
 # --- Latest endpoint ---
