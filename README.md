@@ -45,6 +45,8 @@ curl -X POST https://news-classifier-245a.onrender.com/classify \
   "url": "https://www.finextra.com/newsarticle/43498/...",
   "label": "GOOD_NEWS",
   "confidence": 0.82,
+  "relevance": 0.92,
+  "sentiment": 0.65,
   "reasoning": "FiDA creates new regulatory requirements driving demand for wealth tech compliance solutions like Performativ.",
   "relevance_topics": ["FiDA", "EU regulation", "compliance", "data integration"],
   "processed_at": "2026-04-10T09:04:52.037063+00:00"

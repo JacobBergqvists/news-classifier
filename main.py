@@ -94,21 +94,27 @@ Confidence scoring guidelines (be precise, do NOT default to 0.72 or other round
 - 0.10-0.29: Very unlikely to be relevant
 Use the FULL range. Vary your scores — 0.63, 0.78, 0.41, 0.87 are all valid. Never round to the nearest 5 or 10.
 
-Relevance score: a single number from -1.0 to 1.0 that combines relevance AND sentiment:
-- +0.7 to +1.0: Highly relevant, very positive for Performativ
-- +0.3 to +0.7: Relevant, somewhat positive
-- +0.01 to +0.3: Slightly relevant, mildly positive
-- 0.0: Completely unrelated to Performativ
-- -0.01 to -0.3: Slightly relevant, mildly negative
-- -0.3 to -0.7: Relevant, somewhat negative
-- -0.7 to -1.0: Highly relevant, very negative for Performativ
-The further from 0, the more relevant. The sign indicates positive or negative impact.
+Relevance (how closely the article relates to Performativ's domain):
+- 0.90-1.0: Directly about Performativ, its competitors, or core product category
+- 0.70-0.89: Clearly about wealth management tech, portfolio systems, or specific regulation (DORA, MiFID II, FiDA)
+- 0.40-0.69: Adjacent territory — fintech, compliance tech, or enterprise SaaS, but not specifically wealth management
+- 0.10-0.39: Loosely connected — general finance, banking, or broad tech industry news
+- 0.0-0.09: No meaningful connection to Performativ's business
+
+Sentiment (if the article IS relevant, how positive or negative is the impact for Performativ):
+- +0.7 to +1.0: Very positive — growing demand, favorable regulation, competitor weakness
+- +0.3 to +0.7: Somewhat positive — market tailwinds, positive industry trends
+- -0.3 to +0.3: Neutral or mixed — could go either way, or no clear positive/negative angle
+- -0.3 to -0.7: Somewhat negative — headwinds, unfavorable trends, increased competition
+- -0.7 to -1.0: Very negative — adverse regulation, security breaches, market contraction
+For UNRELATED articles, sentiment should be 0.0.
 
 Respond ONLY with a JSON object in this exact format (no markdown, no extra text):
 {
   "label": "GOOD_NEWS" | "BAD_NEWS" | "UNRELATED",
   "confidence": 0.0-1.0,
-  "relevance_score": -1.0 to 1.0,
+  "relevance": 0.0-1.0,
+  "sentiment": -1.0 to 1.0,
   "reasoning": "1-2 sentence explanation",
   "relevance_topics": ["topic1", "topic2"]
 }"""
@@ -237,7 +243,8 @@ async def classify_with_claude(url: str, article_text: str) -> dict:
         raise HTTPException(status_code=500, detail="Classification returned an invalid label.")
 
     result.setdefault("confidence", 0.5)
-    result.setdefault("relevance_score", 0.0)
+    result.setdefault("relevance", 0.0)
+    result.setdefault("sentiment", 0.0)
     result.setdefault("reasoning", "No reasoning provided.")
     result.setdefault("relevance_topics", [])
 
@@ -274,7 +281,8 @@ class ClassifyResponse(BaseModel):
     url: str
     label: str
     confidence: float
-    relevance_score: float
+    relevance: float
+    sentiment: float
     reasoning: str
     relevance_topics: list[str]
     processed_at: str
@@ -323,7 +331,8 @@ async def classify(request: ClassifyRequest, req: Request):
         "url": url,
         "label": classification["label"],
         "confidence": classification["confidence"],
-        "relevance_score": classification.get("relevance_score", 0.0),
+        "relevance": classification.get("relevance", 0.0),
+        "sentiment": classification.get("sentiment", 0.0),
         "reasoning": classification["reasoning"],
         "relevance_topics": classification.get("relevance_topics", []),
         "processed_at": datetime.now(timezone.utc).isoformat(),

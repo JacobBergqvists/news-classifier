@@ -182,26 +182,30 @@ tailwind.config = {
             <span id="label" class="text-[10px] font-bold tracking-[0.12em] uppercase px-3 py-1.5"></span>
             <span id="conf-num" class="text-sm font-bold text-white/20 tabular-nums"></span>
           </div>
-          <!-- Relevance score meter (-1 to +1) -->
-          <div class="mb-4">
-            <div class="flex items-center justify-between mb-2">
+          <!-- Relevance meter (0 to 1) -->
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1.5">
               <span class="text-[9px] tracking-wider uppercase text-white/15">Relevance</span>
               <span id="rel-value" class="text-[9px] tracking-wider uppercase text-white/15 tabular-nums"></span>
             </div>
-            <div class="relative w-full h-1.5 bg-white/[0.05] border border-white/[0.07] overflow-hidden">
-              <!-- Center line -->
-              <div class="absolute left-1/2 top-0 w-px h-full bg-white/10 z-10"></div>
-              <div id="rel-bar" class="absolute top-0 h-full transition-all duration-500" style="left:50%;width:0%"></div>
+            <div class="w-full h-1 bg-white/[0.05] border border-white/[0.07] overflow-hidden">
+              <div id="rel-bar" class="h-full bg-gradient-to-r from-white/10 to-white/50 transition-all duration-500" style="width:0%"></div>
             </div>
-            <div class="flex justify-between mt-1">
-              <span class="text-[8px] text-white/10">-1.0</span>
-              <span class="text-[8px] text-white/10">0</span>
-              <span class="text-[8px] text-white/10">+1.0</span>
+          </div>
+          <!-- Sentiment meter (-1 to +1) -->
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[9px] tracking-wider uppercase text-white/15">Sentiment</span>
+              <span id="sent-value" class="text-[9px] tracking-wider uppercase text-white/15 tabular-nums"></span>
+            </div>
+            <div class="relative w-full h-1 bg-white/[0.05] border border-white/[0.07] overflow-hidden">
+              <div class="absolute left-1/2 top-0 w-px h-full bg-white/10 z-10"></div>
+              <div id="sent-bar" class="absolute top-0 h-full transition-all duration-500" style="left:50%;width:0%"></div>
             </div>
           </div>
           <!-- Confidence meter -->
           <div class="mb-4">
-            <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center justify-between mb-1.5">
               <span class="text-[9px] tracking-wider uppercase text-white/15">Confidence</span>
               <span id="conf-label" class="text-[9px] tracking-wider uppercase text-white/15"></span>
             </div>
@@ -217,41 +221,41 @@ tailwind.config = {
         <!-- Confidence guide (when no result) -->
         <div id="confGuide" class="text-[11px] leading-relaxed text-white/20 space-y-3">
           <div>
-            <p class="font-bold text-white/30 mb-1.5">Relevance score (-1.0 to +1.0)</p>
+            <p class="font-bold text-white/30 mb-1.5">Relevance (0.0 to 1.0)</p>
+            <p class="text-white/10 mb-1">How closely does the article relate to Performativ?</p>
             <div class="space-y-1 pl-2 border-l border-white/[0.05]">
               <div class="flex items-center justify-between">
-                <span class="text-emerald-400/40">+0.7 to +1.0</span> <span class="text-white/10">Highly relevant, very positive</span>
+                <span>0.90–1.0</span> <span class="text-white/10">Directly about Performativ or core competitors</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-emerald-400/30">+0.3 to +0.7</span> <span class="text-white/10">Relevant, somewhat positive</span>
+                <span>0.70–0.89</span> <span class="text-white/10">Wealth tech, portfolio systems, specific regulation</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-white/20">~0.0</span> <span class="text-white/10">Unrelated to Performativ</span>
+                <span>0.40–0.69</span> <span class="text-white/10">Adjacent — fintech, compliance tech, enterprise SaaS</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-red-400/30">-0.3 to -0.7</span> <span class="text-white/10">Relevant, somewhat negative</span>
+                <span>0.10–0.39</span> <span class="text-white/10">Loosely connected — general finance or banking</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="font-bold text-white/30 mb-1.5">Sentiment (-1.0 to +1.0)</p>
+            <p class="text-white/10 mb-1">If relevant — is the impact positive or negative?</p>
+            <div class="space-y-1 pl-2 border-l border-white/[0.05]">
+              <div class="flex items-center justify-between">
+                <span class="text-emerald-400/40">+0.7 to +1.0</span> <span class="text-white/10">Very positive — growing demand, favorable regulation</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-red-400/40">-0.7 to -1.0</span> <span class="text-white/10">Highly relevant, very negative</span>
+                <span class="text-white/20">-0.3 to +0.3</span> <span class="text-white/10">Neutral or mixed impact</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-red-400/40">-0.7 to -1.0</span> <span class="text-white/10">Very negative — adverse regulation, market contraction</span>
               </div>
             </div>
           </div>
           <div>
             <p class="font-bold text-white/30 mb-1.5">Confidence (0–100%)</p>
-            <div class="space-y-1 pl-2 border-l border-white/[0.05]">
-              <div class="flex items-center justify-between">
-                <span>90–99%</span> <span class="text-white/10">Direct mention of Performativ or core products</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span>75–89%</span> <span class="text-white/10">Clearly relevant theme (wealth tech, regulation)</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span>55–74%</span> <span class="text-white/10">Tangentially related (fintech, not wealth mgmt)</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span>30–54%</span> <span class="text-white/10">Weak connection (broad industry news)</span>
-              </div>
-            </div>
+            <p class="text-white/10">How certain is the model about this classification?</p>
           </div>
         </div>
       </div>
@@ -290,7 +294,7 @@ tailwind.config = {
     <div class="overflow-hidden"><div class="word-inner text-[clamp(38px,6vw,88px)] font-black tracking-[-0.035em] leading-[0.95] uppercase italic anim-word">Bad news.</div></div>
     <div class="overflow-hidden"><div class="word-inner text-[clamp(38px,6vw,88px)] font-black tracking-[-0.035em] leading-[0.95] uppercase text-white/[0.07] anim-word">Unrelated.</div></div>
     <p class="reveal mt-10 text-white/20 text-sm max-w-md mx-auto leading-relaxed">
-      Three labels. Relevance scoring from -1 to +1. Calibrated confidence. Every classification explained.
+      Three labels. Separate relevance and sentiment scoring. Calibrated confidence. Every classification explained.
     </p>
   </div>
 </section>
@@ -357,7 +361,8 @@ curl <span class="text-white/35">-X</span> POST /classify \
 <span class="text-white/10"># Response</span>
 {
   <span class="text-white/15">"label"</span>: <span class="text-white/15">"GOOD_NEWS"</span>,
-  <span class="text-white/15">"relevance_score"</span>: <span class="text-emerald-400/30">0.78</span>,
+  <span class="text-white/15">"relevance"</span>: <span class="text-white/35">0.92</span>,
+  <span class="text-white/15">"sentiment"</span>: <span class="text-emerald-400/30">+0.65</span>,
   <span class="text-white/15">"confidence"</span>: <span class="text-white/35">0.87</span>,
   <span class="text-white/15">"reasoning"</span>: <span class="text-white/15">"FiDA regulation..."</span>,
   <span class="text-white/15">"relevance_topics"</span>: [<span class="text-white/15">"regulation"</span>]
@@ -525,25 +530,33 @@ function showResult(d) {
   var confPercent = Math.round(d.confidence * 100);
   document.getElementById("conf-num").textContent = confPercent + "%";
 
-  // Update relevance score meter
-  var relScore = d.relevance_score || 0;
+  // Update relevance meter (0 to 1)
+  var rel = d.relevance || 0;
   var relValue = document.getElementById("rel-value");
-  relValue.className = "text-[9px] tracking-wider uppercase tabular-nums";
-  relValue.textContent = (relScore >= 0 ? "+" : "") + relScore.toFixed(2);
-  if (relScore > 0.3) relValue.classList.add("text-emerald-400/50");
-  else if (relScore < -0.3) relValue.classList.add("text-red-400/50");
-  else relValue.classList.add("text-white/15");
-
+  relValue.className = "text-[9px] tracking-wider uppercase tabular-nums text-white/15";
+  relValue.textContent = rel.toFixed(2);
   var relBar = document.getElementById("rel-bar");
-  if (relScore >= 0) {
-    relBar.style.left = "50%";
-    relBar.style.width = (relScore * 50) + "%";
-    relBar.className = "absolute top-0 h-full transition-all duration-500 bg-emerald-500/50";
+  relBar.style.width = (rel * 100) + "%";
+
+  // Update sentiment meter (-1 to +1)
+  var sent = d.sentiment || 0;
+  var sentValue = document.getElementById("sent-value");
+  sentValue.className = "text-[9px] tracking-wider uppercase tabular-nums";
+  sentValue.textContent = (sent >= 0 ? "+" : "") + sent.toFixed(2);
+  if (sent > 0.3) sentValue.classList.add("text-emerald-400/50");
+  else if (sent < -0.3) sentValue.classList.add("text-red-400/50");
+  else sentValue.classList.add("text-white/15");
+
+  var sentBar = document.getElementById("sent-bar");
+  if (sent >= 0) {
+    sentBar.style.left = "50%";
+    sentBar.style.width = (sent * 50) + "%";
+    sentBar.className = "absolute top-0 h-full transition-all duration-500 bg-emerald-500/50";
   } else {
-    var absWidth = Math.abs(relScore) * 50;
-    relBar.style.left = (50 - absWidth) + "%";
-    relBar.style.width = absWidth + "%";
-    relBar.className = "absolute top-0 h-full transition-all duration-500 bg-red-500/50";
+    var absW = Math.abs(sent) * 50;
+    sentBar.style.left = (50 - absW) + "%";
+    sentBar.style.width = absW + "%";
+    sentBar.className = "absolute top-0 h-full transition-all duration-500 bg-red-500/50";
   }
 
   // Update confidence meter
@@ -591,8 +604,7 @@ async function loadHistory() {
       urlS.textContent = d.url;
       var conf = document.createElement("span");
       conf.className = "text-xs font-bold text-white/[0.07] tabular-nums group-hover:text-white/20 transition-colors duration-300";
-      var rs = d.relevance_score || 0;
-      conf.textContent = (rs >= 0 ? "+" : "") + rs.toFixed(2);
+      conf.textContent = ((d.relevance||0)*100).toFixed(0) + "%";
       div.appendChild(badge); div.appendChild(urlS); div.appendChild(conf);
       div.addEventListener("click", function() { showResult(d); document.getElementById("demo").scrollIntoView({behavior:"smooth"}); });
       c.appendChild(div);

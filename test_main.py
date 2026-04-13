@@ -104,7 +104,8 @@ def test_rate_limiting_blocks_after_limit(mock_fetch, mock_classify):
     mock_classify.return_value = {
         "label": "UNRELATED",
         "confidence": 0.91,
-        "relevance_score": 0.0,
+        "relevance": 0.05,
+        "sentiment": 0.0,
         "reasoning": "Test.",
         "relevance_topics": [],
     }
@@ -128,7 +129,8 @@ def test_classify_good_news(mock_fetch, mock_classify):
     mock_classify.return_value = {
         "label": "GOOD_NEWS",
         "confidence": 0.85,
-        "relevance_score": 0.78,
+        "relevance": 0.88,
+        "sentiment": 0.65,
         "reasoning": "AI adoption in wealth management validates Performativ's market.",
         "relevance_topics": ["AI in wealth management", "portfolio management"],
     }
@@ -139,7 +141,8 @@ def test_classify_good_news(mock_fetch, mock_classify):
     data = response.json()
     assert data["label"] == "GOOD_NEWS"
     assert data["confidence"] == 0.85
-    assert data["relevance_score"] == 0.78
+    assert data["relevance"] == 0.88
+    assert data["sentiment"] == 0.65
     assert "url" in data
     assert "processed_at" in data
     assert len(data["relevance_topics"]) > 0
@@ -152,7 +155,8 @@ def test_classify_unrelated(mock_fetch, mock_classify):
     mock_classify.return_value = {
         "label": "UNRELATED",
         "confidence": 0.95,
-        "relevance_score": 0.0,
+        "relevance": 0.03,
+        "sentiment": 0.0,
         "reasoning": "Entertainment news with no connection to wealth management or fintech.",
         "relevance_topics": [],
     }
@@ -161,7 +165,8 @@ def test_classify_unrelated(mock_fetch, mock_classify):
     assert response.status_code == 200
     data = response.json()
     assert data["label"] == "UNRELATED"
-    assert data["relevance_score"] == 0.0
+    assert data["relevance"] == 0.03
+    assert data["sentiment"] == 0.0
 
 
 @patch("main.classify_with_claude", new_callable=AsyncMock)
@@ -171,7 +176,8 @@ def test_classify_bad_news(mock_fetch, mock_classify):
     mock_classify.return_value = {
         "label": "BAD_NEWS",
         "confidence": 0.78,
-        "relevance_score": -0.65,
+        "relevance": 0.85,
+        "sentiment": -0.65,
         "reasoning": "New regulation could increase compliance burden for wealth tech platforms.",
         "relevance_topics": ["regulation", "compliance"],
     }
@@ -180,27 +186,32 @@ def test_classify_bad_news(mock_fetch, mock_classify):
     assert response.status_code == 200
     data = response.json()
     assert data["label"] == "BAD_NEWS"
-    assert data["relevance_score"] == -0.65
-    assert -1 <= data["relevance_score"] <= 1
+    assert data["relevance"] == 0.85
+    assert data["sentiment"] == -0.65
+    assert 0 <= data["relevance"] <= 1
+    assert -1 <= data["sentiment"] <= 1
 
 
 @patch("main.classify_with_claude", new_callable=AsyncMock)
 @patch("main.fetch_article_text", new_callable=AsyncMock)
-def test_relevance_score_range(mock_fetch, mock_classify):
-    """Verify relevance_score is included and within valid range."""
+def test_relevance_and_sentiment_range(mock_fetch, mock_classify):
+    """Verify relevance and sentiment are included and within valid ranges."""
     mock_fetch.return_value = "Some article text."
     mock_classify.return_value = {
         "label": "GOOD_NEWS",
         "confidence": 0.82,
-        "relevance_score": 0.54,
+        "relevance": 0.74,
+        "sentiment": 0.54,
         "reasoning": "Relevant article.",
         "relevance_topics": ["wealth tech"],
     }
 
     response = client.post("/classify", json={"url": "https://example.com/test"})
     data = response.json()
-    assert "relevance_score" in data
-    assert -1 <= data["relevance_score"] <= 1
+    assert "relevance" in data
+    assert "sentiment" in data
+    assert 0 <= data["relevance"] <= 1
+    assert -1 <= data["sentiment"] <= 1
 
 
 # --- Latest endpoint ---
@@ -213,7 +224,8 @@ def test_latest_returns_recent_results(mock_fetch, mock_classify):
     mock_classify.return_value = {
         "label": "BAD_NEWS",
         "confidence": 0.7,
-        "relevance_score": -0.5,
+        "relevance": 0.80,
+        "sentiment": -0.5,
         "reasoning": "Negative regulation impact.",
         "relevance_topics": ["regulation"],
     }
