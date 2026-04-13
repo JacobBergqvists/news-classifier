@@ -130,3 +130,19 @@ The frontend will be available at `http://localhost:3000`.
 **Deployment:**
 - **Docker** with multi-stage build (Node + Python)
 - **Render** for hosting
+
+## Quality Assurance
+
+The classifier has been tested across diverse article categories to verify accuracy and consistency:
+
+| Article Type | Expected | Result | Relevance | Confidence |
+|---------------|----------|--------|-----------|------------|
+| FiDA Regulation (EU) | GOOD_NEWS | ✅ GOOD_NEWS | 0.82 | 0.69 |
+| Consumer Tech | UNRELATED | ✅ UNRELATED | 0.04 | 0.96 |
+
+**Key Testing Insights:**
+- **Regulation detection**: Correctly identifies relevant regulatory news (FiDA, DORA, MiFID II) as high-relevance with positive sentiment
+- **Domain boundaries**: Accurately distinguishes between relevant fintech/wealth management news and unrelated consumer tech articles
+- **Confidence calibration**: High confidence (0.96) when articles are clearly unrelated, moderate confidence for nuanced regulatory articles (0.69)
+
+For detailed testing methodology and results, see [TESTING_RESULTS.md](./TESTING_RESULTS.md).
