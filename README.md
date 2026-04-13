@@ -1,6 +1,6 @@
 # Performativ News Classifier
 
-A lightweight AI agent that classifies news articles by their relevance to [Performativ](https://www.performativ.com/) — a B2B SaaS platform for wealth managers.
+A lightweight AI agent that classifies news articles by their relevance to [Performativ](https://www.performativ.com/) : a B2B SaaS platform for wealth managers.
 
 Given a news article URL, the agent fetches the content, analyzes it using Claude, and returns a structured classification: **GOOD_NEWS**, **BAD_NEWS**, or **UNRELATED**.
 
