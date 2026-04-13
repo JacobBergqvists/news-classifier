@@ -56,8 +56,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from fastapi.staticfiles import StaticFiles
-
 claude = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 http_client = httpx.AsyncClient(follow_redirects=True)
 

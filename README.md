@@ -1,6 +1,6 @@
 # Performativ News Classifier
 
-A lightweight AI agent that classifies news articles by their relevance to [Performativ](https://www.performativ.com/) : a B2B SaaS platform for wealth managers.
+A lightweight AI agent that classifies news articles by their relevance to [Performativ](https://www.performativ.com/) — a B2B SaaS platform for wealth managers.
 
 Given a news article URL, the agent fetches the content, analyzes it using Claude, and returns a structured classification: **GOOD_NEWS**, **BAD_NEWS**, or **UNRELATED**.
 
@@ -18,9 +18,9 @@ URL  →  Fetch article  →  Claude scores  →  Label derived  →  JSON respo
 
 2. **Classification** — Sends extracted text to Claude (Sonnet) with a domain-specific system prompt that encodes Performativ's business context, relevant themes (wealth tech, regulation, compliance), and irrelevant themes.
 
-3. **Structured output** — Claude returns JSON with label, confidence score, reasoning, and topic tags. The response is validated before being returned.
+3. **Label derivation** — Claude returns numeric scores (relevance + sentiment). The label is derived deterministically: relevance < 0.3 → UNRELATED, else sentiment >= 0 → GOOD_NEWS, else BAD_NEWS. This keeps the classification auditable and consistent.
 
-## API Endpoints
+## API
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -44,12 +44,12 @@ curl -X POST https://news-classifier-245a.onrender.com/classify \
 {
   "url": "https://www.finextra.com/newsarticle/43498/...",
   "label": "GOOD_NEWS",
-  "confidence": 0.79,
-  "relevance": 0.92,
-  "sentiment": 0.65,
+  "confidence": 0.69,
+  "relevance": 0.82,
+  "sentiment": 0.55,
   "reasoning": "FiDA creates new regulatory requirements driving demand for wealth tech compliance solutions like Performativ.",
-  "relevance_topics": ["FiDA", "EU regulation", "compliance", "data integration"],
-  "processed_at": "2026-04-10T09:04:52.037063+00:00"
+  "relevance_topics": ["FiDA", "open finance", "EU regulation", "data integration", "wealth management compliance"],
+  "processed_at": "2026-04-13T12:37:04.327352+00:00"
 }
 ```
 
@@ -57,92 +57,57 @@ curl -X POST https://news-classifier-245a.onrender.com/classify \
 
 - **Jina Reader + fallback** — Many news sites block scrapers. Jina handles most edge cases (paywalls, cookie walls, JS rendering). The direct HTTP fallback ensures we degrade gracefully rather than failing outright.
 
-- **Claude Sonnet over Opus** — Sonnet provides sufficient reasoning quality for classification at ~5x lower cost. For a service that could process hundreds of articles, this matters.
+- **Two-dimensional scoring** — Rather than asking the LLM for a single label, Claude scores articles on two independent axes: *relevance* (how close to Performativ's domain) and *sentiment* (positive or negative business impact). The label is then derived deterministically. This makes classifications more consistent and auditable than asking for a label directly.
 
-- **In-memory storage** — The `/latest` endpoint stores results in memory. This is intentional for a demo — a production system would use a database. The trade-off is simplicity vs. persistence.
+- **Claude Sonnet over Opus** — Sonnet provides sufficient reasoning quality for classification at lower cost and latency. For a service that could process hundreds of articles, this matters.
 
-- **Structured prompt with domain encoding** — Rather than relying on Claude's general knowledge, the system prompt explicitly encodes Performativ's business context, relevant themes (DORA, MiFID II, FiDA, wealth tech), and irrelevant themes. This makes classifications more consistent and auditable.
+- **Domain-encoded system prompt** — Rather than relying on Claude's general knowledge, the system prompt explicitly encodes Performativ's business context, relevant themes (DORA, MiFID II, FiDA, wealth tech), and irrelevant themes. This makes the classifier focused and repeatable.
 
-- **Validation layer** — The API validates both input (URL format) and output (label must be one of three valid values). This prevents garbage-in-garbage-out issues.
+- **In-memory storage** — The `/latest` endpoint stores results in memory. This is intentional for a demo — a production system would use a database.
+
+- **Error page detection** — Before sending content to Claude, the fetcher checks for 404/403 error pages. This avoids wasting an API call on content that isn't actually an article.
 
 ## Error handling
-
-The service handles common failure modes:
 
 - **Paywalled/blocked sites** — Jina Reader as primary fetcher, BeautifulSoup fallback
 - **Timeouts** — Separate timeouts for fetching (20s) and classification, with descriptive error messages
 - **Invalid URLs** — Input validation rejects malformed URLs before processing
-- **Unparseable responses** — Handles markdown-wrapped JSON and validates the label field
+- **Unparseable responses** — Handles markdown-wrapped JSON and validates the response structure
 - **API failures** — Claude API errors return 502 with a user-friendly message
+- **Rate limiting** — 10 requests/min per IP with `X-RateLimit-*` headers
 
 ## Running locally
 
-### Backend only (FastAPI)
-
 ```bash
-# Clone and install
 git clone https://github.com/JacobBergqvists/news-classifier.git
 cd news-classifier
 pip install -r requirements.txt
-
-# Set your API key
 echo 'ANTHROPIC_API_KEY=your-key-here' > .env
 
 # Start the server
 python -m uvicorn main:app --reload
 
-# Run tests
+# Run tests (25 tests)
 python -m pytest test_main.py -v
 ```
 
-### With React frontend (full stack)
-
-```bash
-# Terminal 1: Backend
-pip install -r requirements.txt
-echo 'ANTHROPIC_API_KEY=your-key-here' > .env
-python -m uvicorn main:app --reload
-
-# Terminal 2: Frontend
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend will be available at `http://localhost:3000`.
-
 ## Tech stack
 
-**Backend:**
 - **Python 3.9+** with FastAPI
 - **Claude Sonnet** (Anthropic API) for classification
 - **Jina Reader** for article extraction
 - **BeautifulSoup** as fallback parser
-- **AsyncAnthropic + httpx** for concurrent I/O
-- **Pydantic** for validation and settings management
+- **Tailwind CSS** (CDN) + **GSAP** for the web UI
+- **Docker** for deployment
+- **Render.com** for hosting
 
-**Frontend:**
-- **Next.js 16** with TypeScript
-- **Tailwind CSS** for styling
-- **shadcn/ui** for component library
-- **Three.js** for shader animations
+## Classification quality
 
-**Deployment:**
-- **Docker** with multi-stage build (Node + Python)
-- **Render** for hosting
+Tested across diverse article categories:
 
-## Quality Assurance
+| Article | Label | Relevance | Confidence |
+|---------|-------|-----------|------------|
+| EU FiDA open finance framework (Finextra) | GOOD_NEWS | 0.82 | 0.69 |
+| Consumer tech news (CNN /tech) | UNRELATED | 0.04 | 0.96 |
 
-The classifier has been tested across diverse article categories to verify accuracy and consistency:
-
-| Article Type | Expected | Result | Relevance | Confidence |
-|---------------|----------|--------|-----------|------------|
-| FiDA Regulation (EU) | GOOD_NEWS | ✅ GOOD_NEWS | 0.82 | 0.69 |
-| Consumer Tech | UNRELATED | ✅ UNRELATED | 0.04 | 0.96 |
-
-**Key Testing Insights:**
-- **Regulation detection**: Correctly identifies relevant regulatory news (FiDA, DORA, MiFID II) as high-relevance with positive sentiment
-- **Domain boundaries**: Accurately distinguishes between relevant fintech/wealth management news and unrelated consumer tech articles
-- **Confidence calibration**: High confidence (0.96) when articles are clearly unrelated, moderate confidence for nuanced regulatory articles (0.69)
-
-For detailed testing methodology and results, see [TESTING_RESULTS.md](./TESTING_RESULTS.md).
+The classifier correctly identifies regulation/wealth tech news as relevant with positive sentiment, and general consumer tech as unrelated with high confidence.

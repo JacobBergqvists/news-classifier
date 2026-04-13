@@ -1,11 +1,7 @@
 # Git
 .git
 .gitignore
-
-# Node
-frontend/node_modules
-frontend/.next
-frontend/.npm
+.gitattributes
 
 # Python
 __pycache__
@@ -23,7 +19,6 @@ venv
 .DS_Store
 .env.local
 
-# Misc
-.gitattributes
+# Docs
 README.md
 CLAUDE.md
