@@ -2,16 +2,16 @@
 
 A lightweight AI agent that classifies news articles by their relevance to [Performativ](https://www.performativ.com/) : a B2B SaaS platform for wealth managers.
 
-Given a news article URL, the agent fetches the content, analyzes it using Claude, and returns a structured classification: **GOOD_NEWS**, **BAD_NEWS**, or **UNRELATED**.
+Given a news article URL, the agent fetches the content, analyzes it using Claude, and returns a structured classification: **POSITIVE**, **NEGATIVE**, **NEUTRAL**, or **UNRELATED**.
 
 **Live demo:** https://news-classifier-245a.onrender.com
 
 ## How it works
 
 ```
-URL  →  Fetch article  →  Claude classifies  →  Structured JSON response
-         (Jina Reader      (relevance +          (label, confidence,
-          + fallback)        sentiment)            reasoning, topics)
+URL  →  Fetch article  →  Claude scores  →  Label derived  →  JSON response
+         (Jina Reader      (relevance +     (from scores,      (label, relevance,
+          + fallback)        sentiment)       deterministic)     sentiment, topics)
 ```
 
 1. **Article fetching** — Uses [Jina Reader](https://r.jina.ai/) as the primary fetcher, which handles paywalled, JS-rendered, and bot-blocked pages. Falls back to direct HTTP + BeautifulSoup if Jina fails.
@@ -43,8 +43,7 @@ curl -X POST https://news-classifier-245a.onrender.com/classify \
 ```json
 {
   "url": "https://www.finextra.com/newsarticle/43498/...",
-  "label": "GOOD_NEWS",
-  "confidence": 0.82,
+  "label": "POSITIVE",
   "relevance": 0.92,
   "sentiment": 0.65,
   "reasoning": "FiDA creates new regulatory requirements driving demand for wealth tech compliance solutions like Performativ.",

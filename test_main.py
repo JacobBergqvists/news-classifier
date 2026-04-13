@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app, detect_error_page, latest_results, rate_limit_store, settings
+from main import app, derive_label, detect_error_page, latest_results, rate_limit_store, settings
 
 client = TestClient(app)
 
@@ -94,6 +94,35 @@ def test_detect_error_page_long_valid():
     assert detect_error_page("A" * 500 + " This is a long article about something.") is False
 
 
+# --- Label derivation ---
+
+
+def test_derive_label_positive():
+    assert derive_label(0.85, 0.65) == "POSITIVE"
+
+
+def test_derive_label_negative():
+    assert derive_label(0.80, -0.55) == "NEGATIVE"
+
+
+def test_derive_label_neutral():
+    assert derive_label(0.70, 0.10) == "NEUTRAL"
+
+
+def test_derive_label_unrelated():
+    assert derive_label(0.15, 0.0) == "UNRELATED"
+
+
+def test_derive_label_boundary_relevance():
+    """Relevance exactly at 0.3 should be NEUTRAL (not UNRELATED)."""
+    assert derive_label(0.30, 0.0) == "NEUTRAL"
+
+
+def test_derive_label_boundary_sentiment():
+    """Sentiment exactly at 0.3 should be NEUTRAL (not POSITIVE)."""
+    assert derive_label(0.80, 0.30) == "NEUTRAL"
+
+
 # --- Rate limiting ---
 
 
@@ -102,8 +131,6 @@ def test_detect_error_page_long_valid():
 def test_rate_limiting_blocks_after_limit(mock_fetch, mock_classify):
     mock_fetch.return_value = "Some article text."
     mock_classify.return_value = {
-        "label": "UNRELATED",
-        "confidence": 0.91,
         "relevance": 0.05,
         "sentiment": 0.0,
         "reasoning": "Test.",
@@ -124,11 +151,9 @@ def test_rate_limiting_blocks_after_limit(mock_fetch, mock_classify):
 
 @patch("main.classify_with_claude", new_callable=AsyncMock)
 @patch("main.fetch_article_text", new_callable=AsyncMock)
-def test_classify_good_news(mock_fetch, mock_classify):
+def test_classify_positive(mock_fetch, mock_classify):
     mock_fetch.return_value = "Vanguard launches AI tool for wealth management portfolios."
     mock_classify.return_value = {
-        "label": "GOOD_NEWS",
-        "confidence": 0.85,
         "relevance": 0.88,
         "sentiment": 0.65,
         "reasoning": "AI adoption in wealth management validates Performativ's market.",
@@ -139,8 +164,7 @@ def test_classify_good_news(mock_fetch, mock_classify):
     assert response.status_code == 200
 
     data = response.json()
-    assert data["label"] == "GOOD_NEWS"
-    assert data["confidence"] == 0.85
+    assert data["label"] == "POSITIVE"
     assert data["relevance"] == 0.88
     assert data["sentiment"] == 0.65
     assert "url" in data
@@ -153,8 +177,6 @@ def test_classify_good_news(mock_fetch, mock_classify):
 def test_classify_unrelated(mock_fetch, mock_classify):
     mock_fetch.return_value = "Taylor Swift announces new world tour dates for 2026."
     mock_classify.return_value = {
-        "label": "UNRELATED",
-        "confidence": 0.95,
         "relevance": 0.03,
         "sentiment": 0.0,
         "reasoning": "Entertainment news with no connection to wealth management or fintech.",
@@ -171,11 +193,9 @@ def test_classify_unrelated(mock_fetch, mock_classify):
 
 @patch("main.classify_with_claude", new_callable=AsyncMock)
 @patch("main.fetch_article_text", new_callable=AsyncMock)
-def test_classify_bad_news(mock_fetch, mock_classify):
+def test_classify_negative(mock_fetch, mock_classify):
     mock_fetch.return_value = "EU introduces strict regulations on wealth management AI tools."
     mock_classify.return_value = {
-        "label": "BAD_NEWS",
-        "confidence": 0.78,
         "relevance": 0.85,
         "sentiment": -0.65,
         "reasoning": "New regulation could increase compliance burden for wealth tech platforms.",
@@ -185,7 +205,7 @@ def test_classify_bad_news(mock_fetch, mock_classify):
     response = client.post("/classify", json={"url": "https://example.com/regulation"})
     assert response.status_code == 200
     data = response.json()
-    assert data["label"] == "BAD_NEWS"
+    assert data["label"] == "NEGATIVE"
     assert data["relevance"] == 0.85
     assert data["sentiment"] == -0.65
     assert 0 <= data["relevance"] <= 1
@@ -194,24 +214,41 @@ def test_classify_bad_news(mock_fetch, mock_classify):
 
 @patch("main.classify_with_claude", new_callable=AsyncMock)
 @patch("main.fetch_article_text", new_callable=AsyncMock)
-def test_relevance_and_sentiment_range(mock_fetch, mock_classify):
-    """Verify relevance and sentiment are included and within valid ranges."""
+def test_classify_neutral(mock_fetch, mock_classify):
+    """Article that is relevant but neither positive nor negative."""
+    mock_fetch.return_value = "UK wealth management firms ranked by assets under management."
+    mock_classify.return_value = {
+        "relevance": 0.74,
+        "sentiment": 0.12,
+        "reasoning": "Industry overview relevant to Performativ's market but with no clear positive or negative impact.",
+        "relevance_topics": ["wealth management"],
+    }
+
+    response = client.post("/classify", json={"url": "https://example.com/overview"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["label"] == "NEUTRAL"
+    assert 0 <= data["relevance"] <= 1
+    assert -1 <= data["sentiment"] <= 1
+
+
+@patch("main.classify_with_claude", new_callable=AsyncMock)
+@patch("main.fetch_article_text", new_callable=AsyncMock)
+def test_response_has_no_confidence(mock_fetch, mock_classify):
+    """Verify confidence field is not in the response (removed by design)."""
     mock_fetch.return_value = "Some article text."
     mock_classify.return_value = {
-        "label": "GOOD_NEWS",
-        "confidence": 0.82,
-        "relevance": 0.74,
-        "sentiment": 0.54,
+        "relevance": 0.50,
+        "sentiment": 0.40,
         "reasoning": "Relevant article.",
         "relevance_topics": ["wealth tech"],
     }
 
     response = client.post("/classify", json={"url": "https://example.com/test"})
     data = response.json()
+    assert "confidence" not in data
     assert "relevance" in data
     assert "sentiment" in data
-    assert 0 <= data["relevance"] <= 1
-    assert -1 <= data["sentiment"] <= 1
 
 
 # --- Latest endpoint ---
@@ -222,8 +259,6 @@ def test_relevance_and_sentiment_range(mock_fetch, mock_classify):
 def test_latest_returns_recent_results(mock_fetch, mock_classify):
     mock_fetch.return_value = "Some article text."
     mock_classify.return_value = {
-        "label": "BAD_NEWS",
-        "confidence": 0.7,
         "relevance": 0.80,
         "sentiment": -0.5,
         "reasoning": "Negative regulation impact.",

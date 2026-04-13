@@ -75,24 +75,13 @@ SYSTEM_PROMPT = """You are a news relevance classifier for Performativ — a B2B
 Performativ serves: private banks, family offices, asset managers, RIAs, and advisory platforms.
 Its product covers: portfolio management, compliance, reporting, data integration, and AI-enabled operations.
 
-Classify news articles as exactly one of:
-- GOOD_NEWS: relevant to Performativ's business AND net positive (e.g. growing demand for wealth tech, positive regulation, competitor struggles)
-- BAD_NEWS: relevant to Performativ's business AND net negative (e.g. adverse regulation, market contraction, security breaches in fintech)
-- UNRELATED: not materially relevant to Performativ's business
-
 Relevant themes: wealth management software, portfolio management systems, private banking, family offices, RIAs,
 regulation (DORA, MiFID II, FiDA), compliance reporting, AI in regulated finance, enterprise data integration,
 legacy modernization, custodian connectivity.
 
 Irrelevant themes: general consumer tech, unrelated macro news, local news, entertainment, sports, lifestyle.
 
-Confidence scoring guidelines (be precise, do NOT default to 0.72 or other round numbers):
-- 0.90-0.99: Article directly mentions Performativ, its competitors, or core product categories by name
-- 0.75-0.89: Article clearly covers a relevant theme (wealth tech, specific regulation, portfolio systems)
-- 0.55-0.74: Article is tangentially related — touches on financial services but not wealth management specifically
-- 0.30-0.54: Weak connection — general fintech or broad industry news
-- 0.10-0.29: Very unlikely to be relevant
-Use the FULL range. Vary your scores — 0.63, 0.78, 0.41, 0.87 are all valid. Never round to the nearest 5 or 10.
+Score the article on two independent dimensions:
 
 Relevance (how closely the article relates to Performativ's domain):
 - 0.90-1.0: Directly about Performativ, its competitors, or core product category
@@ -100,6 +89,7 @@ Relevance (how closely the article relates to Performativ's domain):
 - 0.40-0.69: Adjacent territory — fintech, compliance tech, or enterprise SaaS, but not specifically wealth management
 - 0.10-0.39: Loosely connected — general finance, banking, or broad tech industry news
 - 0.0-0.09: No meaningful connection to Performativ's business
+Use the FULL range. Vary your scores — 0.63, 0.78, 0.41, 0.87 are all valid. Never round to the nearest 5 or 10.
 
 Sentiment (if the article IS relevant, how positive or negative is the impact for Performativ):
 - +0.7 to +1.0: Very positive — growing demand, favorable regulation, competitor weakness
@@ -107,19 +97,33 @@ Sentiment (if the article IS relevant, how positive or negative is the impact fo
 - -0.3 to +0.3: Neutral or mixed — could go either way, or no clear positive/negative angle
 - -0.3 to -0.7: Somewhat negative — headwinds, unfavorable trends, increased competition
 - -0.7 to -1.0: Very negative — adverse regulation, security breaches, market contraction
-For UNRELATED articles, sentiment should be 0.0.
+For irrelevant articles (relevance < 0.3), sentiment should be 0.0.
 
 Respond ONLY with a JSON object in this exact format (no markdown, no extra text):
 {
-  "label": "GOOD_NEWS" | "BAD_NEWS" | "UNRELATED",
-  "confidence": 0.0-1.0,
   "relevance": 0.0-1.0,
   "sentiment": -1.0 to 1.0,
   "reasoning": "1-2 sentence explanation",
   "relevance_topics": ["topic1", "topic2"]
 }"""
 
-VALID_LABELS = {"GOOD_NEWS", "BAD_NEWS", "UNRELATED"}
+VALID_LABELS = {"POSITIVE", "NEGATIVE", "NEUTRAL", "UNRELATED"}
+
+
+def derive_label(relevance: float, sentiment: float) -> str:
+    """Derive a classification label from relevance and sentiment scores.
+
+    This keeps the label deterministic and consistent — Claude only provides
+    the two numeric scores, and the label is a pure function of those scores.
+    """
+    if relevance < 0.3:
+        return "UNRELATED"
+    elif sentiment > 0.3:
+        return "POSITIVE"
+    elif sentiment < -0.3:
+        return "NEGATIVE"
+    else:
+        return "NEUTRAL"
 
 # Common error page patterns that indicate we didn't get real content
 ERROR_PAGE_PATTERNS = [
@@ -237,12 +241,7 @@ async def classify_with_claude(url: str, article_text: str) -> dict:
             logger.error("Could not parse Claude response: %s", raw)
             raise HTTPException(status_code=500, detail="Could not parse classification response.")
 
-    # Validate required fields and values
-    if result.get("label") not in VALID_LABELS:
-        logger.error("Invalid label in response: %s", result.get("label"))
-        raise HTTPException(status_code=500, detail="Classification returned an invalid label.")
-
-    result.setdefault("confidence", 0.5)
+    # Set defaults for missing fields
     result.setdefault("relevance", 0.0)
     result.setdefault("sentiment", 0.0)
     result.setdefault("reasoning", "No reasoning provided.")
@@ -280,7 +279,6 @@ class ClassifyRequest(BaseModel):
 class ClassifyResponse(BaseModel):
     url: str
     label: str
-    confidence: float
     relevance: float
     sentiment: float
     reasoning: str
@@ -327,12 +325,14 @@ async def classify(request: ClassifyRequest, req: Request):
     article_text = await fetch_article_text(url)
     classification = await classify_with_claude(url, article_text)
 
+    relevance = classification["relevance"]
+    sentiment = classification["sentiment"]
+
     result = {
         "url": url,
-        "label": classification["label"],
-        "confidence": classification["confidence"],
-        "relevance": classification.get("relevance", 0.0),
-        "sentiment": classification.get("sentiment", 0.0),
+        "label": derive_label(relevance, sentiment),
+        "relevance": relevance,
+        "sentiment": sentiment,
         "reasoning": classification["reasoning"],
         "relevance_topics": classification.get("relevance_topics", []),
         "processed_at": datetime.now(timezone.utc).isoformat(),
@@ -343,7 +343,7 @@ async def classify(request: ClassifyRequest, req: Request):
     if len(latest_results) > 20:
         latest_results.pop()
 
-    logger.info("Result: %s (confidence: %.2f)", result["label"], result["confidence"])
+    logger.info("Result: %s (relevance: %.2f, sentiment: %.2f)", result["label"], result["relevance"], result["sentiment"])
     return result
 
 

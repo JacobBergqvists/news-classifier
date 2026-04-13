@@ -178,9 +178,8 @@ tailwind.config = {
         </div>
         <div id="error" class="hidden p-3 border border-red-500/15 text-red-400/70 text-xs mb-4 relative"></div>
         <div id="result" class="hidden relative">
-          <div class="flex items-center justify-between mb-4 pt-1">
+          <div class="mb-4 pt-1">
             <span id="label" class="text-[10px] font-bold tracking-[0.12em] uppercase px-3 py-1.5"></span>
-            <span id="conf-num" class="text-sm font-bold text-white/20 tabular-nums"></span>
           </div>
           <!-- Relevance meter (0 to 1) -->
           <div class="mb-3">
@@ -203,16 +202,8 @@ tailwind.config = {
               <div id="sent-bar" class="absolute top-0 h-full transition-all duration-500" style="left:50%;width:0%"></div>
             </div>
           </div>
-          <!-- Confidence meter -->
-          <div class="mb-4">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[9px] tracking-wider uppercase text-white/15">Confidence</span>
-              <span id="conf-label" class="text-[9px] tracking-wider uppercase text-white/15"></span>
-            </div>
-            <div class="w-full h-1 bg-white/[0.05] border border-white/[0.07] overflow-hidden">
-              <div id="conf-bar" class="h-full bg-gradient-to-r from-red-500/60 via-yellow-500/60 to-emerald-500/60 transition-all duration-500" style="width:50%"></div>
-            </div>
-          </div>
+          <!-- spacer -->
+          <div class="mb-4"></div>
           <p id="reasoning" class="text-xs leading-[1.9] text-white/30 mb-4 pl-3 border-l border-white/[0.07]"></p>
           <div id="topics" class="flex flex-wrap gap-1.5 mb-3"></div>
           <p id="meta" class="text-[10px] text-white/10 uppercase tracking-wider"></p>
@@ -254,8 +245,21 @@ tailwind.config = {
             </div>
           </div>
           <div>
-            <p class="font-bold text-white/30 mb-1.5">Confidence (0–100%)</p>
-            <p class="text-white/10">How certain is the model about this classification?</p>
+            <p class="font-bold text-white/30 mb-1.5">Labels (derived from scores)</p>
+            <div class="space-y-1 pl-2 border-l border-white/[0.05]">
+              <div class="flex items-center justify-between">
+                <span class="text-emerald-400/40">POSITIVE</span> <span class="text-white/10">Relevant + positive sentiment</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-red-400/40">NEGATIVE</span> <span class="text-white/10">Relevant + negative sentiment</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-amber-400/40">NEUTRAL</span> <span class="text-white/10">Relevant but mixed/neutral sentiment</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-white/20">UNRELATED</span> <span class="text-white/10">Low relevance to Performativ</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -282,7 +286,7 @@ tailwind.config = {
     <div class="reveal p-8 md:p-10 group hover:bg-white/[0.02] transition-all duration-500">
       <p class="text-[10px] font-bold tracking-[0.2em] text-white/10 mb-8 group-hover:text-white/25 transition-colors duration-500">03</p>
       <h3 class="text-base font-bold uppercase mb-3 group-hover:translate-x-1 transition-transform duration-400">Return</h3>
-      <p class="text-xs leading-[1.9] text-white/20 group-hover:text-white/40 transition-colors duration-500">Returns label, relevance score, confidence, reasoning, and topics as validated JSON — ready for dashboards or further processing.</p>
+      <p class="text-xs leading-[1.9] text-white/20 group-hover:text-white/40 transition-colors duration-500">Returns relevance, sentiment, derived label, reasoning, and topics as validated JSON — ready for dashboards or further processing.</p>
     </div>
   </div>
 </section>
@@ -290,11 +294,12 @@ tailwind.config = {
 <!-- BOLD STATEMENT -->
 <section class="py-28 md:py-40 bg-white/[0.015] border-y border-white/[0.05] overflow-hidden relative z-10">
   <div class="max-w-6xl mx-auto px-6 md:px-10 text-center">
-    <div class="overflow-hidden"><div class="word-inner text-[clamp(38px,6vw,88px)] font-black tracking-[-0.035em] leading-[0.95] uppercase italic anim-word">Good news.</div></div>
-    <div class="overflow-hidden"><div class="word-inner text-[clamp(38px,6vw,88px)] font-black tracking-[-0.035em] leading-[0.95] uppercase italic anim-word">Bad news.</div></div>
+    <div class="overflow-hidden"><div class="word-inner text-[clamp(38px,6vw,88px)] font-black tracking-[-0.035em] leading-[0.95] uppercase italic text-emerald-400/20 anim-word">Positive.</div></div>
+    <div class="overflow-hidden"><div class="word-inner text-[clamp(38px,6vw,88px)] font-black tracking-[-0.035em] leading-[0.95] uppercase italic text-red-400/20 anim-word">Negative.</div></div>
+    <div class="overflow-hidden"><div class="word-inner text-[clamp(38px,6vw,88px)] font-black tracking-[-0.035em] leading-[0.95] uppercase italic text-amber-400/20 anim-word">Neutral.</div></div>
     <div class="overflow-hidden"><div class="word-inner text-[clamp(38px,6vw,88px)] font-black tracking-[-0.035em] leading-[0.95] uppercase text-white/[0.07] anim-word">Unrelated.</div></div>
     <p class="reveal mt-10 text-white/20 text-sm max-w-md mx-auto leading-relaxed">
-      Three labels. Separate relevance and sentiment scoring. Calibrated confidence. Every classification explained.
+      Four labels. Derived from two independent scores. No redundancy. Every classification explained.
     </p>
   </div>
 </section>
@@ -360,10 +365,9 @@ curl <span class="text-white/35">-X</span> POST /classify \
 
 <span class="text-white/10"># Response</span>
 {
-  <span class="text-white/15">"label"</span>: <span class="text-white/15">"GOOD_NEWS"</span>,
+  <span class="text-white/15">"label"</span>: <span class="text-white/15">"POSITIVE"</span>,
   <span class="text-white/15">"relevance"</span>: <span class="text-white/35">0.92</span>,
   <span class="text-white/15">"sentiment"</span>: <span class="text-emerald-400/30">+0.65</span>,
-  <span class="text-white/15">"confidence"</span>: <span class="text-white/35">0.87</span>,
   <span class="text-white/15">"reasoning"</span>: <span class="text-white/15">"FiDA regulation..."</span>,
   <span class="text-white/15">"relevance_topics"</span>: [<span class="text-white/15">"regulation"</span>]
 }</pre>
@@ -521,14 +525,12 @@ async function classify() {
 
 function showResult(d) {
   var label = document.getElementById("label");
-  label.textContent = d.label.replace("_"," ");
+  label.textContent = d.label;
   label.className = "text-[10px] font-bold tracking-[0.12em] uppercase px-3 py-1.5";
-  if (d.label === "GOOD_NEWS") label.classList.add("border","border-emerald-500/25","text-emerald-400/80");
-  else if (d.label === "BAD_NEWS") label.classList.add("border","border-red-500/25","text-red-400/80");
+  if (d.label === "POSITIVE") label.classList.add("border","border-emerald-500/25","text-emerald-400/80");
+  else if (d.label === "NEGATIVE") label.classList.add("border","border-red-500/25","text-red-400/80");
+  else if (d.label === "NEUTRAL") label.classList.add("border","border-amber-500/25","text-amber-400/80");
   else label.classList.add("border","border-white/10","text-white/30");
-
-  var confPercent = Math.round(d.confidence * 100);
-  document.getElementById("conf-num").textContent = confPercent + "%";
 
   // Update relevance meter (0 to 1)
   var rel = d.relevance || 0;
@@ -559,15 +561,6 @@ function showResult(d) {
     sentBar.className = "absolute top-0 h-full transition-all duration-500 bg-red-500/50";
   }
 
-  // Update confidence meter
-  var confBar = document.getElementById("conf-bar");
-  confBar.style.width = confPercent + "%";
-  var confLabel = document.getElementById("conf-label");
-  if (d.confidence >= 0.90) confLabel.textContent = "Very High";
-  else if (d.confidence >= 0.75) confLabel.textContent = "High";
-  else if (d.confidence >= 0.55) confLabel.textContent = "Medium";
-  else confLabel.textContent = "Low";
-
   document.getElementById("reasoning").textContent = d.reasoning;
   var t = document.getElementById("topics");
   t.innerHTML = "";
@@ -595,10 +588,11 @@ async function loadHistory() {
       div.className = "flex items-center gap-3 py-4 cursor-pointer group opacity-0";
       var badge = document.createElement("span");
       badge.className = "text-[9px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 flex-shrink-0 border transition-all duration-300";
-      if (d.label==="GOOD_NEWS") badge.classList.add("border-emerald-500/15","text-emerald-400/50","group-hover:border-emerald-500/35","group-hover:text-emerald-400");
-      else if (d.label==="BAD_NEWS") badge.classList.add("border-red-500/15","text-red-400/50","group-hover:border-red-500/35","group-hover:text-red-400");
+      if (d.label==="POSITIVE") badge.classList.add("border-emerald-500/15","text-emerald-400/50","group-hover:border-emerald-500/35","group-hover:text-emerald-400");
+      else if (d.label==="NEGATIVE") badge.classList.add("border-red-500/15","text-red-400/50","group-hover:border-red-500/35","group-hover:text-red-400");
+      else if (d.label==="NEUTRAL") badge.classList.add("border-amber-500/15","text-amber-400/50","group-hover:border-amber-500/35","group-hover:text-amber-400");
       else badge.classList.add("border-white/[0.05]","text-white/15","group-hover:border-white/15","group-hover:text-white/35");
-      badge.textContent = d.label.replace("_"," ");
+      badge.textContent = d.label;
       var urlS = document.createElement("span");
       urlS.className = "flex-1 text-[11px] text-white/10 truncate font-mono group-hover:text-white/25 transition-colors duration-300";
       urlS.textContent = d.url;
