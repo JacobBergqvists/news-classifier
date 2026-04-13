@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import anthropic
 import httpx
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, field_validator
@@ -302,7 +302,7 @@ async def health():
 
 
 @app.post("/classify", response_model=ClassifyResponse)
-async def classify(request: ClassifyRequest, req: Request):
+async def classify(request: ClassifyRequest, req: Request, response: Response):
     """Classify a news article by its relevance to Performativ's business.
 
     Fetches the article content, sends it to Claude for analysis, and returns
@@ -313,6 +313,13 @@ async def classify(request: ClassifyRequest, req: Request):
     now = time.time()
     timestamps = rate_limit_store.get(client_ip, [])
     timestamps = [t for t in timestamps if now - t < settings.rate_window]
+
+    # Add rate limit headers
+    remaining = settings.rate_limit - len(timestamps)
+    response.headers["X-RateLimit-Limit"] = str(settings.rate_limit)
+    response.headers["X-RateLimit-Remaining"] = str(max(0, remaining))
+    response.headers["X-RateLimit-Reset"] = str(int(now + settings.rate_window))
+
     if len(timestamps) >= settings.rate_limit:
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Max 10 requests per minute.")
     timestamps.append(now)
