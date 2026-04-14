@@ -137,7 +137,9 @@ def test_rate_limiting_blocks_after_limit(mock_fetch, mock_classify):
     mock_fetch.return_value = "Some article text."
     mock_classify.return_value = {
         "relevance": 0.05,
+        "relevance_confidence": 0.9,
         "sentiment": 0.0,
+        "sentiment_confidence": 1.0,
         "reasoning": "Test.",
         "relevance_topics": [],
     }
@@ -160,7 +162,9 @@ def test_classify_good_news(mock_fetch, mock_classify):
     mock_fetch.return_value = "Vanguard launches AI tool for wealth management portfolios."
     mock_classify.return_value = {
         "relevance": 0.88,
+        "relevance_confidence": 0.9,
         "sentiment": 0.65,
+        "sentiment_confidence": 0.8,
         "reasoning": "AI adoption in wealth management validates Performativ's market.",
         "relevance_topics": ["AI in wealth management", "portfolio management"],
     }
@@ -184,7 +188,9 @@ def test_classify_unrelated(mock_fetch, mock_classify):
     mock_fetch.return_value = "Taylor Swift announces new world tour dates for 2026."
     mock_classify.return_value = {
         "relevance": 0.03,
+        "relevance_confidence": 0.95,
         "sentiment": 0.0,
+        "sentiment_confidence": 1.0,
         "reasoning": "Entertainment news with no connection to wealth management or fintech.",
         "relevance_topics": [],
     }
@@ -202,7 +208,9 @@ def test_classify_bad_news(mock_fetch, mock_classify):
     mock_fetch.return_value = "EU introduces strict regulations on wealth management AI tools."
     mock_classify.return_value = {
         "relevance": 0.85,
+        "relevance_confidence": 0.9,
         "sentiment": -0.65,
+        "sentiment_confidence": 0.75,
         "reasoning": "New regulation could increase compliance burden for wealth tech platforms.",
         "relevance_topics": ["regulation", "compliance"],
     }
@@ -223,7 +231,9 @@ def test_response_matches_case_format(mock_fetch, mock_classify):
     mock_fetch.return_value = "Some article text."
     mock_classify.return_value = {
         "relevance": 0.74,
+        "relevance_confidence": 0.85,
         "sentiment": 0.40,
+        "sentiment_confidence": 0.7,
         "reasoning": "Relevant article.",
         "relevance_topics": ["wealth tech"],
     }
@@ -253,7 +263,9 @@ def test_latest_returns_recent_results(mock_fetch, mock_classify):
     mock_fetch.return_value = "Some article text."
     mock_classify.return_value = {
         "relevance": 0.80,
+        "relevance_confidence": 0.85,
         "sentiment": -0.5,
+        "sentiment_confidence": 0.7,
         "reasoning": "Negative regulation impact.",
         "relevance_topics": ["regulation"],
     }
@@ -326,6 +338,101 @@ def test_validate_ensures_topics_are_strings():
     assert result["relevance_topics"] == ["123", "True", "valid"]
 
 
+def test_validate_defaults_confidence_values():
+    """When Claude omits confidence fields, default to 0.5 (moderate uncertainty)."""
+    result = _validate_classification({"relevance": 0.7, "sentiment": 0.5})
+    assert result["relevance_confidence"] == 0.5
+    assert result["sentiment_confidence"] == 0.5
+
+
+def test_validate_clamps_confidence_values():
+    """Confidence fields should be clamped to [0, 1]."""
+    result = _validate_classification({
+        "relevance": 0.5, "sentiment": 0.3,
+        "relevance_confidence": 1.5, "sentiment_confidence": -0.2,
+    })
+    assert result["relevance_confidence"] == 1.0
+    assert result["sentiment_confidence"] == 0.0
+
+
+def test_validate_forces_full_sentiment_confidence_for_irrelevant():
+    """Irrelevant articles have sentiment=0 by rule, so sentiment_confidence is 1.0."""
+    result = _validate_classification({
+        "relevance": 0.1, "sentiment": 0.8,
+        "relevance_confidence": 0.9, "sentiment_confidence": 0.3,
+    })
+    assert result["sentiment"] == 0.0
+    assert result["sentiment_confidence"] == 1.0
+
+
+# --- Confidence calculation ---
+
+
+@patch("main.classify_with_claude", new_callable=AsyncMock)
+@patch("main.fetch_article_text", new_callable=AsyncMock)
+def test_confidence_high_when_model_certain_and_far_from_boundary(mock_fetch, mock_classify):
+    """Claude confident + scores far from boundaries → high confidence."""
+    mock_fetch.return_value = "Article text."
+    mock_classify.return_value = {
+        "relevance": 0.90, "relevance_confidence": 0.95,
+        "sentiment": 0.80, "sentiment_confidence": 0.90,
+        "reasoning": "Clear.", "relevance_topics": ["wealth"],
+    }
+    resp = client.post("/classify", json={"url": "https://example.com/a"})
+    assert resp.status_code == 200
+    assert resp.json()["confidence"] >= 0.75
+
+
+@patch("main.classify_with_claude", new_callable=AsyncMock)
+@patch("main.fetch_article_text", new_callable=AsyncMock)
+def test_confidence_low_when_model_uncertain(mock_fetch, mock_classify):
+    """Even with strong scores, low Claude confidence should lower overall confidence."""
+    mock_fetch.return_value = "Article text."
+    mock_classify.return_value = {
+        "relevance": 0.90, "relevance_confidence": 0.2,
+        "sentiment": 0.80, "sentiment_confidence": 0.2,
+        "reasoning": "Unsure.", "relevance_topics": ["wealth"],
+    }
+    resp = client.post("/classify", json={"url": "https://example.com/b"})
+    assert resp.status_code == 200
+    # With strong boundary distance but weak model certainty, confidence should drop
+    assert resp.json()["confidence"] < 0.55
+
+
+@patch("main.classify_with_claude", new_callable=AsyncMock)
+@patch("main.fetch_article_text", new_callable=AsyncMock)
+def test_confidence_low_when_near_boundary(mock_fetch, mock_classify):
+    """Scores right at the boundary should yield low confidence even if Claude is sure."""
+    mock_fetch.return_value = "Article text."
+    mock_classify.return_value = {
+        "relevance": 0.31, "relevance_confidence": 0.95,
+        "sentiment": 0.05, "sentiment_confidence": 0.95,
+        "reasoning": "Edge.", "relevance_topics": ["wealth"],
+    }
+    resp = client.post("/classify", json={"url": "https://example.com/c"})
+    assert resp.status_code == 200
+    # Near both boundaries → low boundary confidence → low overall
+    assert resp.json()["confidence"] < 0.30
+
+
+@patch("main.classify_with_claude", new_callable=AsyncMock)
+@patch("main.fetch_article_text", new_callable=AsyncMock)
+def test_response_includes_confidence_fields(mock_fetch, mock_classify):
+    """Response should expose both self-reported confidence values."""
+    mock_fetch.return_value = "Article text."
+    mock_classify.return_value = {
+        "relevance": 0.75, "relevance_confidence": 0.85,
+        "sentiment": 0.50, "sentiment_confidence": 0.70,
+        "reasoning": "OK.", "relevance_topics": ["wealth"],
+    }
+    resp = client.post("/classify", json={"url": "https://example.com/d"})
+    data = resp.json()
+    assert "relevance_confidence" in data
+    assert "sentiment_confidence" in data
+    assert data["relevance_confidence"] == 0.85
+    assert data["sentiment_confidence"] == 0.70
+
+
 # --- URL caching ---
 
 
@@ -336,7 +443,9 @@ def test_cache_returns_same_result(mock_fetch, mock_classify):
     mock_fetch.return_value = "Article text."
     mock_classify.return_value = {
         "relevance": 0.72,
+        "relevance_confidence": 0.85,
         "sentiment": 0.45,
+        "sentiment_confidence": 0.7,
         "reasoning": "Relevant article.",
         "relevance_topics": ["wealth tech"],
     }

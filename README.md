@@ -44,9 +44,11 @@ curl -X POST https://news-classifier-245a.onrender.com/classify \
 {
   "url": "https://www.finextra.com/newsarticle/43498/...",
   "label": "GOOD_NEWS",
-  "confidence": 0.69,
+  "confidence": 0.72,
   "relevance": 0.82,
+  "relevance_confidence": 0.90,
   "sentiment": 0.55,
+  "sentiment_confidence": 0.75,
   "reasoning": "FiDA creates new regulatory requirements driving demand for wealth tech compliance solutions like Performativ.",
   "relevance_topics": ["FiDA", "open finance", "EU regulation", "data integration", "wealth management compliance"],
   "processed_at": "2026-04-13T12:37:04.327352+00:00"
@@ -58,6 +60,8 @@ curl -X POST https://news-classifier-245a.onrender.com/classify \
 - **Jina Reader + fallback** — Many news sites block scrapers. Jina handles most edge cases (paywalls, cookie walls, JS rendering). The direct HTTP fallback ensures we degrade gracefully rather than failing outright.
 
 - **Two-dimensional scoring** — Rather than asking the LLM for a single label, Claude scores articles on two independent axes: *relevance* (how close to Performativ's domain) and *sentiment* (positive or negative business impact). The label is then derived deterministically. This makes classifications more consistent and auditable than asking for a label directly.
+
+- **Hybrid confidence calculation** — Confidence combines two independent signals via geometric mean: (1) Claude's self-reported certainty on each score, and (2) distance from decision boundaries. This is more honest than distance alone — an article with scores far from boundaries but where Claude was guessing correctly yields lower confidence. Both signals must be strong for high confidence.
 
 - **Claude Sonnet over Opus** — Sonnet provides sufficient reasoning quality for classification at lower cost and latency. For a service that could process hundreds of articles, this matters.
 
@@ -87,7 +91,7 @@ echo 'ANTHROPIC_API_KEY=your-key-here' > .env
 # Start the server
 python -m uvicorn main:app --reload
 
-# Run tests (34 tests)
+# Run tests (41 tests)
 python -m pytest test_main.py -v
 ```
 

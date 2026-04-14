@@ -143,7 +143,9 @@ Article: "EU reaches agreement on FiDA open finance framework requiring wealth m
   "reasoning": "FiDA is a foundational EU regulation that directly mandates how wealth managers handle and share client financial data — the exact infrastructure Performativ provides. Standardized open finance APIs create immediate compliance demand and position data-integration platforms like Performativ as essential. The regulatory clarity is net positive: it turns compliance from optional to mandatory, which shortens Performativ's sales cycle.",
   "relevance_topics": ["FiDA", "open finance", "EU regulation", "data integration", "wealth management compliance"],
   "relevance": 0.82,
-  "sentiment": 0.55
+  "relevance_confidence": 0.9,
+  "sentiment": 0.55,
+  "sentiment_confidence": 0.75
 }
 
 Article: "Apple unveils new AI-powered features for iPhone at WWDC, including smarter Siri and on-device language models"
@@ -151,7 +153,9 @@ Article: "Apple unveils new AI-powered features for iPhone at WWDC, including sm
   "reasoning": "This is a consumer hardware and mobile AI announcement with no connection to wealth management, financial regulation, or enterprise software infrastructure. The primary subject — smartphone AI features — has no pathway to affect Performativ's customers or revenue.",
   "relevance_topics": [],
   "relevance": 0.03,
-  "sentiment": 0.0
+  "relevance_confidence": 0.98,
+  "sentiment": 0.0,
+  "sentiment_confidence": 1.0
 }
 
 Article: "Major data breach at European private bank exposes 500,000 client portfolios, regulators launch investigation"
@@ -159,7 +163,9 @@ Article: "Major data breach at European private bank exposes 500,000 client port
   "reasoning": "Private banks are Performativ's direct customer segment, making this immediately relevant. The breach heightens regulatory scrutiny on data security across wealth management — this typically accelerates compliance investment but also signals reputational and operational risk for the sector. Net negative: regulators will impose stricter data handling requirements that add compliance burden, and client trust erosion could reduce AUM and thus wealth manager spending power.",
   "relevance_topics": ["private banking", "data security", "compliance", "regulation", "wealth management"],
   "relevance": 0.78,
-  "sentiment": -0.62
+  "relevance_confidence": 0.85,
+  "sentiment": -0.62,
+  "sentiment_confidence": 0.6
 }
 
 Article: "Global fintech investment reaches record $40B as venture capital flows into payment processors and neobanks"
@@ -167,7 +173,9 @@ Article: "Global fintech investment reaches record $40B as venture capital flows
   "reasoning": "Fintech investment is adjacent to Performativ's domain but the capital flows here are toward payments and neobanks — not wealth management infrastructure. The connection is real but indirect: strong fintech investment signals general market appetite for financial software and could eventually fund competitors, but the article is not specifically about Performativ's market. Calibration test: a Performativ employee might glance at this but would not share it as directly actionable.",
   "relevance_topics": ["fintech", "venture capital", "financial technology investment"],
   "relevance": 0.38,
-  "sentiment": 0.18
+  "relevance_confidence": 0.6,
+  "sentiment": 0.18,
+  "sentiment_confidence": 0.4
 }
 
 Article: "Swedish startup launches AI-powered portfolio rebalancing tool for independent financial advisors"
@@ -175,7 +183,9 @@ Article: "Swedish startup launches AI-powered portfolio rebalancing tool for ind
   "reasoning": "This is a direct competitive threat in Performativ's core market. Portfolio rebalancing for independent financial advisors (RIAs) is exactly the product category Performativ competes in, and a new AI-native entrant increases competitive pressure. The sentiment is negative because a new well-positioned entrant means harder sales cycles, potential price pressure, and risk of losing prospects — even if the startup is currently small.",
   "relevance_topics": ["portfolio management", "AI in finance", "wealth management software", "RIAs", "competitive landscape"],
   "relevance": 0.88,
-  "sentiment": -0.38
+  "relevance_confidence": 0.9,
+  "sentiment": -0.38,
+  "sentiment_confidence": 0.65
 }
 
 Article: "European Central Bank raises interest rates by 50 basis points amid persistent inflation"
@@ -183,8 +193,30 @@ Article: "European Central Bank raises interest rates by 50 basis points amid pe
   "reasoning": "Macroeconomic monetary policy news. Rising rates affect asset prices and AUM — which indirectly affects how much wealth managers earn and potentially their software budgets. However, this is three steps removed from Performativ's direct business: rates → AUM → wealth manager revenue → software spending. The article is about ECB policy, not about wealth management software or regulation affecting Performativ's customers directly. Calibration test: a Performativ employee would not share this as relevant to their work.",
   "relevance_topics": ["interest rates", "monetary policy", "macroeconomics"],
   "relevance": 0.17,
-  "sentiment": 0.0
+  "relevance_confidence": 0.85,
+  "sentiment": 0.0,
+  "sentiment_confidence": 1.0
 }
+
+═══ CONFIDENCE REPORTING ═══
+
+For each score, also report HOW CERTAIN you are about that score (0.0–1.0):
+
+- relevance_confidence: How confident are you in your relevance score? 1.0 = definitive, 0.5 = plausible but could be off, 0.2 = guessing.
+- sentiment_confidence: How confident are you in your sentiment score? Same scale.
+
+Report LOW confidence (≤ 0.5) when:
+- The article is ambiguous or could be read multiple ways
+- You lack context about the specific company/regulation mentioned
+- The impact on Performativ requires speculation
+- Your reasoning felt like it could go either way
+
+Report HIGH confidence (≥ 0.8) when:
+- The article is unambiguous (clearly about wealth tech, or clearly unrelated)
+- The business impact is obvious and direct
+- A Performativ employee would classify it the same way without hesitation
+
+For irrelevant articles (relevance < 0.3), sentiment_confidence should be 1.0 (we know sentiment doesn't apply).
 
 ═══ OUTPUT FORMAT ═══
 
@@ -194,7 +226,9 @@ Respond ONLY with a JSON object. Write reasoning and topics FIRST — before com
   "reasoning": "2-3 sentences walking through your thinking before scoring",
   "relevance_topics": ["topic1", "topic2"],
   "relevance": 0.0-1.0,
-  "sentiment": -1.0 to 1.0
+  "relevance_confidence": 0.0-1.0,
+  "sentiment": -1.0 to 1.0,
+  "sentiment_confidence": 0.0-1.0
 }"""
 
 
@@ -316,24 +350,33 @@ def _validate_classification(result: dict) -> dict:
     result.setdefault("sentiment", 0.0)
     result.setdefault("reasoning", "No reasoning provided.")
     result.setdefault("relevance_topics", [])
+    # Self-reported confidence defaults to 0.5 (moderately uncertain) if Claude omits it
+    result.setdefault("relevance_confidence", 0.5)
+    result.setdefault("sentiment_confidence", 0.5)
 
     # Coerce to float (Claude sometimes returns ints or strings)
-    try:
-        result["relevance"] = float(result["relevance"])
-    except (TypeError, ValueError):
-        result["relevance"] = 0.0
-    try:
-        result["sentiment"] = float(result["sentiment"])
-    except (TypeError, ValueError):
-        result["sentiment"] = 0.0
+    for key, default in (
+        ("relevance", 0.0),
+        ("sentiment", 0.0),
+        ("relevance_confidence", 0.5),
+        ("sentiment_confidence", 0.5),
+    ):
+        try:
+            result[key] = float(result[key])
+        except (TypeError, ValueError):
+            result[key] = default
 
     # Clamp to valid ranges
     result["relevance"] = max(0.0, min(1.0, result["relevance"]))
     result["sentiment"] = max(-1.0, min(1.0, result["sentiment"]))
+    result["relevance_confidence"] = max(0.0, min(1.0, result["relevance_confidence"]))
+    result["sentiment_confidence"] = max(0.0, min(1.0, result["sentiment_confidence"]))
 
-    # Enforce sentiment = 0 for irrelevant articles (as instructed in prompt)
+    # Enforce sentiment = 0 for irrelevant articles (as instructed in prompt).
+    # Sentiment doesn't apply to irrelevant articles, so we're fully confident about that.
     if result["relevance"] < 0.3:
         result["sentiment"] = 0.0
+        result["sentiment_confidence"] = 1.0
 
     # Ensure topics is a list of strings
     if not isinstance(result["relevance_topics"], list):
@@ -411,7 +454,9 @@ class ClassifyResponse(BaseModel):
     label: str
     confidence: float
     relevance: float
+    relevance_confidence: float
     sentiment: float
+    sentiment_confidence: float
     reasoning: str
     relevance_topics: list[str]
     processed_at: str
@@ -472,32 +517,46 @@ async def classify(request: ClassifyRequest, req: Request, response: Response):
 
     relevance = classification["relevance"]
     sentiment = classification["sentiment"]
+    relevance_confidence = classification["relevance_confidence"]
+    sentiment_confidence = classification["sentiment_confidence"]
 
-    # Confidence = geometric mean of normalized distances from both decision boundaries.
+    # Confidence combines TWO independent signals:
     #
-    # Two boundaries determine the label:
-    #   1. relevance = 0.3  (relevant vs. unrelated)
-    #   2. sentiment = 0.0  (good news vs. bad news)
+    # 1. MODEL CERTAINTY — How sure is Claude about its own scores?
+    #    Self-reported as relevance_confidence and sentiment_confidence.
+    #    LLMs can be overconfident, but asking them to report uncertainty
+    #    produces a more honest signal than ignoring it.
     #
-    # The further from both boundaries simultaneously, the more confident we are.
-    # Geometric mean is used because both dimensions must be strong — a near-zero
-    # in either collapses confidence, unlike arithmetic mean which compensates.
+    # 2. BOUNDARY DISTANCE — How far are the scores from decision boundaries?
+    #    A score right on the boundary (e.g. relevance=0.31) yields the same
+    #    label but a different classification would flip with a tiny change.
     #
-    # UNRELATED: only boundary 1 matters.
-    #   margin = distance below 0.3, normalized to [0, 1] over the full [0, 1] range.
-    #   Using (1.0 - relevance) rather than (0.3 - relevance)/0.3 to preserve
-    #   intuitive scaling across the full relevance range.
+    # Final confidence = geometric mean of model certainty and boundary distance.
+    # Geometric mean is used because both signals must be strong — a weakness
+    # in either (Claude is guessing, OR the score is near a boundary) correctly
+    # collapses overall confidence.
     #
-    # GOOD/BAD_NEWS: both boundaries matter.
-    #   rel_margin = (relevance - 0.3) / 0.7   → 0 at threshold, 1 at max relevance
-    #   sent_margin = |sentiment|               → 0 at neutral, 1 at extreme
-    #   confidence  = sqrt(rel_margin * sent_margin)
+    # UNRELATED (relevance < 0.3):
+    #   Only relevance boundary applies; sentiment is forced to 0.
+    #   boundary_conf = 1.0 - relevance  (far below 0.3 → high confidence)
+    #   model_conf    = relevance_confidence
+    #
+    # GOOD/BAD_NEWS (relevance ≥ 0.3):
+    #   Both relevance and sentiment boundaries matter.
+    #   rel_margin   = (relevance - 0.3) / 0.7
+    #   sent_margin  = |sentiment|
+    #   boundary_conf = sqrt(rel_margin * sent_margin)
+    #   model_conf    = sqrt(relevance_confidence * sentiment_confidence)
     if relevance < 0.3:
-        confidence = round(1.0 - relevance, 2)
+        boundary_conf = 1.0 - relevance
+        model_conf = relevance_confidence
     else:
         rel_margin = (relevance - 0.3) / 0.7
         sent_margin = abs(sentiment)
-        confidence = round(math.sqrt(rel_margin * sent_margin), 2)
+        boundary_conf = math.sqrt(rel_margin * sent_margin)
+        model_conf = math.sqrt(relevance_confidence * sentiment_confidence)
+
+    confidence = round(math.sqrt(boundary_conf * model_conf), 2)
     confidence = min(confidence, 0.99)
 
     result = {
@@ -505,7 +564,9 @@ async def classify(request: ClassifyRequest, req: Request, response: Response):
         "label": derive_label(relevance, sentiment),
         "confidence": confidence,
         "relevance": relevance,
+        "relevance_confidence": round(relevance_confidence, 2),
         "sentiment": sentiment,
+        "sentiment_confidence": round(sentiment_confidence, 2),
         "reasoning": classification["reasoning"],
         "relevance_topics": classification.get("relevance_topics", []),
         "processed_at": datetime.now(timezone.utc).isoformat(),
