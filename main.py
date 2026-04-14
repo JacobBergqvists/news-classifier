@@ -98,6 +98,23 @@ Sentiment (if the article IS relevant, how positive or negative is the impact fo
 - -0.7 to -1.0: Very negative — adverse regulation, security breaches, market contraction
 For irrelevant articles (relevance < 0.3), sentiment should be 0.0.
 
+REFERENCE EXAMPLES (use these to calibrate your scoring):
+
+Article: "EU reaches agreement on FiDA open finance framework requiring wealth managers to share client data through standardized APIs"
+→ {"relevance": 0.82, "sentiment": 0.55, "reasoning": "FiDA directly regulates the data flows Performativ manages. Standardized APIs create demand for compliant platforms.", "relevance_topics": ["FiDA", "open finance", "EU regulation", "data integration"]}
+
+Article: "Apple unveils new AI-powered features for iPhone at WWDC, including smarter Siri and on-device language models"
+→ {"relevance": 0.03, "sentiment": 0.0, "reasoning": "Consumer tech announcement with no connection to wealth management, financial regulation, or enterprise software.", "relevance_topics": []}
+
+Article: "Major data breach at European private bank exposes 500,000 client portfolios, regulators launch investigation"
+→ {"relevance": 0.78, "sentiment": -0.65, "reasoning": "Directly impacts Performativ's customer segment. Heightens regulatory scrutiny on data security in wealth management, increasing compliance burden.", "relevance_topics": ["private banking", "data security", "compliance", "regulation"]}
+
+Article: "Global fintech investment reaches record $40B as venture capital flows into payment processors and neobanks"
+→ {"relevance": 0.41, "sentiment": 0.28, "reasoning": "Fintech investment trends are adjacent but not specific to wealth management software. Rising fintech investment is mildly positive as it signals market appetite for financial technology.", "relevance_topics": ["fintech", "venture capital"]}
+
+Article: "Swedish startup launches AI-powered portfolio rebalancing tool for independent financial advisors"
+→ {"relevance": 0.88, "sentiment": -0.35, "reasoning": "Direct competitor in Performativ's core market — AI-enabled portfolio management for advisors. New entrant increases competitive pressure.", "relevance_topics": ["portfolio management", "AI in finance", "wealth management software", "RIAs"]}
+
 Respond ONLY with a JSON object in this exact format (no markdown, no extra text):
 {
   "relevance": 0.0-1.0,
