@@ -8,7 +8,10 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app, derive_label, detect_error_page, latest_results, rate_limit_store, settings
+from main import (
+    app, derive_label, detect_error_page, latest_results, rate_limit_store,
+    settings, classification_cache, _validate_classification,
+)
 
 client = TestClient(app)
 
@@ -18,6 +21,7 @@ def clear_state():
     """Reset shared state between tests."""
     rate_limit_store.clear()
     latest_results.clear()
+    classification_cache.clear()
     yield
 
 
@@ -268,3 +272,83 @@ def test_latest_empty():
     response = client.get("/latest")
     assert response.status_code == 200
     assert response.json() == []
+
+
+# --- Output validation ---
+
+
+def test_validate_clamps_relevance_above_1():
+    result = _validate_classification({"relevance": 1.5, "sentiment": 0.5})
+    assert result["relevance"] == 1.0
+
+
+def test_validate_clamps_relevance_below_0():
+    result = _validate_classification({"relevance": -0.2, "sentiment": 0.0})
+    assert result["relevance"] == 0.0
+
+
+def test_validate_clamps_sentiment_range():
+    result = _validate_classification({"relevance": 0.5, "sentiment": 2.0})
+    assert result["sentiment"] == 1.0
+    result = _validate_classification({"relevance": 0.5, "sentiment": -1.5})
+    assert result["sentiment"] == -1.0
+
+
+def test_validate_coerces_string_to_float():
+    """Claude occasionally returns numbers as strings."""
+    result = _validate_classification({"relevance": "0.75", "sentiment": "-0.3"})
+    assert result["relevance"] == 0.75
+    assert result["sentiment"] == -0.3
+
+
+def test_validate_handles_invalid_type():
+    result = _validate_classification({"relevance": "not a number", "sentiment": None})
+    assert result["relevance"] == 0.0
+    assert result["sentiment"] == 0.0
+
+
+def test_validate_zeroes_sentiment_for_irrelevant():
+    """Irrelevant articles should have sentiment forced to 0.0."""
+    result = _validate_classification({"relevance": 0.15, "sentiment": 0.8})
+    assert result["sentiment"] == 0.0
+
+
+def test_validate_sets_defaults():
+    result = _validate_classification({})
+    assert result["relevance"] == 0.0
+    assert result["sentiment"] == 0.0
+    assert result["reasoning"] == "No reasoning provided."
+    assert result["relevance_topics"] == []
+
+
+def test_validate_ensures_topics_are_strings():
+    result = _validate_classification({"relevance_topics": [123, True, "valid"]})
+    assert result["relevance_topics"] == ["123", "True", "valid"]
+
+
+# --- URL caching ---
+
+
+@patch("main.classify_with_claude", new_callable=AsyncMock)
+@patch("main.fetch_article_text", new_callable=AsyncMock)
+def test_cache_returns_same_result(mock_fetch, mock_classify):
+    """Second request for the same URL should return cached result without calling Claude."""
+    mock_fetch.return_value = "Article text."
+    mock_classify.return_value = {
+        "relevance": 0.72,
+        "sentiment": 0.45,
+        "reasoning": "Relevant article.",
+        "relevance_topics": ["wealth tech"],
+    }
+
+    resp1 = client.post("/classify", json={"url": "https://example.com/cached"})
+    resp2 = client.post("/classify", json={"url": "https://example.com/cached"})
+
+    assert resp1.status_code == 200
+    assert resp2.status_code == 200
+    assert resp1.json()["label"] == resp2.json()["label"]
+    assert resp1.json()["relevance"] == resp2.json()["relevance"]
+
+    # Claude and fetch should only be called once — second request was cached
+    assert mock_classify.call_count == 1
+    assert mock_fetch.call_count == 1

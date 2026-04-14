@@ -64,6 +64,11 @@ http_client = httpx.AsyncClient(follow_redirects=True)
 # A production system would use a database, but this is sufficient for a demo.
 latest_results: list[dict] = []
 
+# URL cache: avoids re-classifying the same article.
+# Maps URL → classification result. Bounded to prevent memory growth.
+MAX_CACHE_SIZE = 100
+classification_cache: dict[str, dict] = {}
+
 # Simple rate limiting: max N requests per minute per IP
 rate_limit_store: dict[str, list[float]] = {}
 
@@ -222,44 +227,88 @@ async def fetch_article_text(url: str) -> str:
     )
 
 
-async def classify_with_claude(url: str, article_text: str) -> dict:
-    """Send article text to Claude for classification. Returns a validated result dict."""
-    user_message = f"Classify this article.\n\nURL: {url}\n\nArticle content:\n{article_text}"
-
+def _parse_claude_response(raw: str) -> dict:
+    """Parse Claude's JSON response, handling markdown-wrapped output."""
     try:
-        message = await claude.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=512,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_message}],
-        )
-    except anthropic.APITimeoutError:
-        raise HTTPException(status_code=504, detail="Classification timed out. Please try again.")
-    except anthropic.APIError as e:
-        logger.error("Claude API error: %s", e)
-        raise HTTPException(status_code=502, detail="Classification service temporarily unavailable.")
-
-    raw = message.content[0].text.strip()
-    logger.info("Claude raw response: %s", raw[:200])
-
-    # Parse response — handle both clean JSON and markdown-wrapped JSON
-    try:
-        result = json.loads(raw)
+        return json.loads(raw)
     except json.JSONDecodeError:
         cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
-        try:
-            result = json.loads(cleaned)
-        except json.JSONDecodeError:
-            logger.error("Could not parse Claude response: %s", raw)
-            raise HTTPException(status_code=500, detail="Could not parse classification response.")
+        return json.loads(cleaned)
 
+
+def _validate_classification(result: dict) -> dict:
+    """Validate and clamp Claude's output to expected ranges.
+
+    Claude occasionally returns scores outside the expected range or wrong types.
+    This ensures downstream code always receives well-formed data.
+    """
     # Set defaults for missing fields
     result.setdefault("relevance", 0.0)
     result.setdefault("sentiment", 0.0)
     result.setdefault("reasoning", "No reasoning provided.")
     result.setdefault("relevance_topics", [])
 
+    # Coerce to float (Claude sometimes returns ints or strings)
+    try:
+        result["relevance"] = float(result["relevance"])
+    except (TypeError, ValueError):
+        result["relevance"] = 0.0
+    try:
+        result["sentiment"] = float(result["sentiment"])
+    except (TypeError, ValueError):
+        result["sentiment"] = 0.0
+
+    # Clamp to valid ranges
+    result["relevance"] = max(0.0, min(1.0, result["relevance"]))
+    result["sentiment"] = max(-1.0, min(1.0, result["sentiment"]))
+
+    # Enforce sentiment = 0 for irrelevant articles (as instructed in prompt)
+    if result["relevance"] < 0.3:
+        result["sentiment"] = 0.0
+
+    # Ensure topics is a list of strings
+    if not isinstance(result["relevance_topics"], list):
+        result["relevance_topics"] = []
+    result["relevance_topics"] = [str(t) for t in result["relevance_topics"]]
+
     return result
+
+
+async def classify_with_claude(url: str, article_text: str) -> dict:
+    """Send article text to Claude for classification. Returns a validated result dict.
+
+    Retries once on parse failure before giving up — handles transient formatting issues.
+    """
+    user_message = f"Classify this article.\n\nURL: {url}\n\nArticle content:\n{article_text}"
+    messages = [{"role": "user", "content": user_message}]
+
+    last_error = None
+    for attempt in range(2):
+        try:
+            message = await claude.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=512,
+                system=SYSTEM_PROMPT,
+                messages=messages,
+            )
+        except anthropic.APITimeoutError:
+            raise HTTPException(status_code=504, detail="Classification timed out. Please try again.")
+        except anthropic.APIError as e:
+            logger.error("Claude API error: %s", e)
+            raise HTTPException(status_code=502, detail="Classification service temporarily unavailable.")
+
+        raw = message.content[0].text.strip()
+        logger.info("Claude response (attempt %d): %s", attempt + 1, raw[:200])
+
+        try:
+            result = _parse_claude_response(raw)
+            return _validate_classification(result)
+        except (json.JSONDecodeError, KeyError) as e:
+            last_error = e
+            logger.warning("Parse failed on attempt %d: %s", attempt + 1, e)
+
+    logger.error("Could not parse Claude response after 2 attempts: %s", last_error)
+    raise HTTPException(status_code=500, detail="Could not parse classification response.")
 
 
 # --- Request/Response models ---
@@ -342,6 +391,13 @@ async def classify(request: ClassifyRequest, req: Request, response: Response):
     url = request.url
     logger.info("Classifying: %s", url)
 
+    # Return cached result if available (avoids redundant API calls)
+    if url in classification_cache:
+        logger.info("Cache hit for %s", url)
+        cached = classification_cache[url].copy()
+        cached["processed_at"] = datetime.now(timezone.utc).isoformat()
+        return cached
+
     article_text = await fetch_article_text(url)
     classification = await classify_with_claude(url, article_text)
 
@@ -385,6 +441,13 @@ async def classify(request: ClassifyRequest, req: Request, response: Response):
         "relevance_topics": classification.get("relevance_topics", []),
         "processed_at": datetime.now(timezone.utc).isoformat(),
     }
+
+    # Cache result to avoid re-classifying the same URL.
+    # Evict oldest entry if cache is full.
+    if len(classification_cache) >= MAX_CACHE_SIZE:
+        oldest_key = next(iter(classification_cache))
+        del classification_cache[oldest_key]
+    classification_cache[url] = result.copy()
 
     # Store in memory (most recent first, capped at 20)
     latest_results.insert(0, result)
