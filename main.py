@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import re
 import time
 from datetime import datetime, timezone
@@ -104,8 +105,6 @@ Respond ONLY with a JSON object in this exact format (no markdown, no extra text
   "reasoning": "1-2 sentence explanation",
   "relevance_topics": ["topic1", "topic2"]
 }"""
-
-VALID_LABELS = {"GOOD_NEWS", "BAD_NEWS", "UNRELATED"}
 
 
 def derive_label(relevance: float, sentiment: float) -> str:
@@ -332,12 +331,31 @@ async def classify(request: ClassifyRequest, req: Request, response: Response):
     relevance = classification["relevance"]
     sentiment = classification["sentiment"]
 
-    # Confidence is derived: high relevance + strong sentiment = high confidence.
-    # For UNRELATED articles, confidence reflects how sure we are it's irrelevant.
+    # Confidence = geometric mean of normalized distances from both decision boundaries.
+    #
+    # Two boundaries determine the label:
+    #   1. relevance = 0.3  (relevant vs. unrelated)
+    #   2. sentiment = 0.0  (good news vs. bad news)
+    #
+    # The further from both boundaries simultaneously, the more confident we are.
+    # Geometric mean is used because both dimensions must be strong — a near-zero
+    # in either collapses confidence, unlike arithmetic mean which compensates.
+    #
+    # UNRELATED: only boundary 1 matters.
+    #   margin = distance below 0.3, normalized to [0, 1] over the full [0, 1] range.
+    #   Using (1.0 - relevance) rather than (0.3 - relevance)/0.3 to preserve
+    #   intuitive scaling across the full relevance range.
+    #
+    # GOOD/BAD_NEWS: both boundaries matter.
+    #   rel_margin = (relevance - 0.3) / 0.7   → 0 at threshold, 1 at max relevance
+    #   sent_margin = |sentiment|               → 0 at neutral, 1 at extreme
+    #   confidence  = sqrt(rel_margin * sent_margin)
     if relevance < 0.3:
-        confidence = round(1.0 - relevance, 2)  # Low relevance → high confidence it's unrelated
+        confidence = round(1.0 - relevance, 2)
     else:
-        confidence = round((relevance + abs(sentiment)) / 2, 2)  # Avg of relevance strength and sentiment strength
+        rel_margin = (relevance - 0.3) / 0.7
+        sent_margin = abs(sentiment)
+        confidence = round(math.sqrt(rel_margin * sent_margin), 2)
     confidence = min(confidence, 0.99)
 
     result = {
