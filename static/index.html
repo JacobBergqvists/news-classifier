@@ -217,7 +217,7 @@ tailwind.config = {
             <p class="text-white/10 mb-1">How closely does the article relate to Performativ?</p>
             <div class="space-y-1 pl-2 border-l border-white/[0.05]">
               <div class="flex items-center justify-between">
-                <span>0.90–1.0</span> <span class="text-white/10">Directly about Performativ or core competitors</span>
+                <span>0.90–1.00</span> <span class="text-white/10">Directly about Performativ or core competitors</span>
               </div>
               <div class="flex items-center justify-between">
                 <span>0.70–0.89</span> <span class="text-white/10">Wealth tech, portfolio systems, specific regulation</span>
@@ -227,6 +227,9 @@ tailwind.config = {
               </div>
               <div class="flex items-center justify-between">
                 <span>0.10–0.39</span> <span class="text-white/10">Loosely connected — general finance or banking</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>0.00–0.09</span> <span class="text-white/10">No meaningful connection</span>
               </div>
             </div>
           </div>
@@ -238,7 +241,13 @@ tailwind.config = {
                 <span class="text-emerald-400/40">+0.7 to +1.0</span> <span class="text-white/10">Very positive — growing demand, favorable regulation</span>
               </div>
               <div class="flex items-center justify-between">
+                <span class="text-emerald-400/20">+0.3 to +0.7</span> <span class="text-white/10">Somewhat positive — market tailwinds</span>
+              </div>
+              <div class="flex items-center justify-between">
                 <span class="text-white/20">-0.3 to +0.3</span> <span class="text-white/10">Neutral or mixed impact</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-red-400/20">-0.3 to -0.7</span> <span class="text-white/10">Somewhat negative — headwinds, competition</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-red-400/40">-0.7 to -1.0</span> <span class="text-white/10">Very negative — adverse regulation, market contraction</span>
