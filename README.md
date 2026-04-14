@@ -87,7 +87,7 @@ echo 'ANTHROPIC_API_KEY=your-key-here' > .env
 # Start the server
 python -m uvicorn main:app --reload
 
-# Run tests (25 tests)
+# Run tests (34 tests)
 python -m pytest test_main.py -v
 ```
 
